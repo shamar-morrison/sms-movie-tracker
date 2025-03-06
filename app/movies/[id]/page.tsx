@@ -1,14 +1,14 @@
-import Image from "next/image"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import MovieRating from "@/components/movie-rating"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import MovieRating from "@/components/movie-rating"
 import { getMovieById } from "@/lib/tmdb"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { ArrowLeft } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
 
 export default async function MoviePage({ params }: { params: { id: string } }) {
   const movie = await getMovieById(params.id)
@@ -158,22 +158,24 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {movie.credits?.cast.slice(0, 8).map((person) => (
                     <div key={person.id} className="space-y-2">
-                      <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-                        <Image
-                          src={
-                            person.profile_path
-                              ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                              : "/placeholder.svg?height=200&width=200"
-                          }
-                          alt={person.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div>
-                        <div className="font-medium">{person.name}</div>
-                        <div className="text-sm text-muted-foreground">{person.character}</div>
-                      </div>
+                      <Link href={`/search?tab=movie&person=${person.id}`} className="block cursor-pointer">
+                        <div className="relative aspect-square overflow-hidden rounded-lg bg-muted hover:opacity-90 transition-opacity">
+                          <Image
+                            src={
+                              person.profile_path
+                                ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
+                                : "/placeholder.svg?height=200&width=200"
+                            }
+                            alt={person.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-medium hover:text-primary transition-colors">{person.name}</div>
+                          <div className="text-sm text-muted-foreground">{person.character}</div>
+                        </div>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -182,22 +184,24 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {movie.credits?.crew.slice(0, 8).map((person) => (
                     <div key={`${person.id}-${person.job}`} className="flex items-center gap-4">
-                      <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-muted">
-                        <Image
-                          src={
-                            person.profile_path
-                              ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                              : "/placeholder.svg?height=64&width=64"
-                          }
-                          alt={person.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div>
-                        <div className="font-medium">{person.name}</div>
-                        <div className="text-sm text-muted-foreground">{person.job}</div>
-                      </div>
+                      <Link href={`/search?tab=movie&person=${person.id}`} className="flex items-center gap-4 cursor-pointer hover:opacity-90 transition-opacity">
+                        <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-muted">
+                          <Image
+                            src={
+                              person.profile_path
+                                ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
+                                : "/placeholder.svg?height=64&width=64"
+                            }
+                            alt={person.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-medium hover:text-primary transition-colors">{person.name}</div>
+                          <div className="text-sm text-muted-foreground">{person.job}</div>
+                        </div>
+                      </Link>
                     </div>
                   ))}
                 </div>

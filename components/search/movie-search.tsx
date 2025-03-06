@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { getMoviesByPerson, getPersonById, searchMoviesByTitle } from "@/lib/tmdb"
 import { Search } from "lucide-react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 export default function MovieSearch() {
   const searchParams = useSearchParams()
   const personId = searchParams.get("person")
+  const router = useRouter()
   
   const [query, setQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
@@ -60,6 +61,12 @@ export default function MovieSearch() {
     }
   }
 
+  const clearPersonFilter = () => {
+    setPersonName(null)
+    setResults([])
+    router.push("/search?tab=movie")
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -71,6 +78,15 @@ export default function MovieSearch() {
             ? `Showing movies featuring ${personName}.` 
             : "Find movies by their title. Enter a full or partial movie name."}
         </p>
+        {personName && (
+          <Button 
+            variant="outline" 
+            className="mt-4" 
+            onClick={clearPersonFilter}
+          >
+            Back to Search
+          </Button>
+        )}
       </div>
 
       {!personName && (
