@@ -22,7 +22,7 @@ export default async function MoviePage({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-9">
       <div className="relative h-[50vh] w-full">
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10" />
         <Image
