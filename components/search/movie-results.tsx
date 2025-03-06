@@ -1,15 +1,20 @@
+import { Button } from "@/components/ui/button"
+import { Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { Star } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 interface MovieResultsProps {
   results: any[]
+  showEmptyMessage?: boolean
 }
 
-export default function MovieResults({ results }: MovieResultsProps) {
+export default function MovieResults({ results, showEmptyMessage = true }: MovieResultsProps) {
+  if (results.length === 0 && showEmptyMessage) {
+    return <div className="text-center py-16 text-muted-foreground">No results found. Try a different search.</div>
+  }
+  
   if (results.length === 0) {
-    return <div className="text-center py-8 text-muted-foreground">No results found. Try a different search.</div>
+    return null
   }
 
   return (
@@ -40,7 +45,11 @@ export default function MovieResults({ results }: MovieResultsProps) {
                 <span className="text-sm">{movie.vote_average.toFixed(1)}</span>
               </div>
             </div>
-            <Button variant="secondary" size="sm" className="mt-3 w-full z-20 relative">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="mt-3 w-full relative z-[5]"
+            >
               Add to Collection
             </Button>
           </div>

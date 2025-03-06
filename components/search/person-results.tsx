@@ -1,14 +1,19 @@
+import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 
 interface PersonResultsProps {
   results: any[]
+  showEmptyMessage?: boolean
 }
 
-export default function PersonResults({ results }: PersonResultsProps) {
+export default function PersonResults({ results, showEmptyMessage = true }: PersonResultsProps) {
+  if (results.length === 0 && showEmptyMessage) {
+    return <div className="text-center py-16 text-muted-foreground">No results found. Try a different search.</div>
+  }
+  
   if (results.length === 0) {
-    return <div className="text-center py-8 text-muted-foreground">No results found. Try a different search.</div>
+    return null
   }
 
   return (

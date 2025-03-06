@@ -19,6 +19,7 @@ export default function GenreSearch() {
   const [yearRange, setYearRange] = useState([1990, new Date().getFullYear()])
   const [isSearching, setIsSearching] = useState(false)
   const [results, setResults] = useState<any[]>([])
+  const [searchPerformed, setSearchPerformed] = useState(false)
 
   const genres = [
     { id: 28, name: "Action" },
@@ -43,7 +44,7 @@ export default function GenreSearch() {
   ]
 
   useEffect(() => {
-    // Automatically search when component loads with genreId parameter
+    // Auto search when component loads with genreId parameter
     if (genreIdParam) {
       performSearch(genreIdParam);
     }
@@ -53,6 +54,7 @@ export default function GenreSearch() {
     if (!genreId) return;
     
     setIsSearching(true);
+    setSearchPerformed(true);
 
     try {
       const searchResults = await discoverMovies(genreId, yearRange[0], yearRange[1]);
@@ -123,7 +125,20 @@ export default function GenreSearch() {
         </Button>
       </form>
 
-      <MovieResults results={results} />
+      {isSearching ? (
+        <div className="text-center py-12">Searching...</div>
+      ) : (
+        !searchPerformed ? (
+          <div className="text-center py-16 text-muted-foreground">
+            Select a genre and year range above, then click "Discover Movies" to see results.
+          </div>
+        ) : (
+          <MovieResults 
+            results={results} 
+            showEmptyMessage={searchPerformed}
+          />
+        )
+      )}
     </div>
   )
 }

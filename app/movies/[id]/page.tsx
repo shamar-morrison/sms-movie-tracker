@@ -155,97 +155,115 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                 <TabsTrigger value="details">Details</TabsTrigger>
               </TabsList>
               <TabsContent value="cast" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {movie.credits?.cast.slice(0, 8).map((person) => (
-                    <div key={person.id} className="space-y-2">
-                      <Link href={`/search?tab=movie&person=${person.id}`} className="block cursor-pointer">
-                        <div className="relative aspect-square overflow-hidden rounded-lg bg-muted hover:opacity-90 transition-opacity">
-                          <Image
-                            src={
-                              person.profile_path
-                                ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                                : "/placeholder.svg?height=200&width=200"
-                            }
-                            alt={person.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-medium hover:text-primary transition-colors">{person.name}</div>
-                          <div className="text-sm text-muted-foreground">{person.character}</div>
-                        </div>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
+                {movie.credits?.cast && movie.credits.cast.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {movie.credits.cast.slice(0, 8).map((person) => (
+                      <div key={person.id} className="space-y-2">
+                        <Link href={`/search?tab=movie&person=${person.id}`} className="block cursor-pointer">
+                          <div className="relative aspect-square overflow-hidden rounded-lg bg-muted hover:opacity-90 transition-opacity">
+                            <Image
+                              src={
+                                person.profile_path
+                                  ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
+                                  : "/placeholder.svg?height=200&width=200"
+                              }
+                              alt={person.name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="font-medium hover:text-primary transition-colors">{person.name}</div>
+                            <div className="text-sm text-muted-foreground">{person.character}</div>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No cast information available for this movie.
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="crew" className="space-y-4 mt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {movie.credits?.crew.slice(0, 8).map((person) => (
-                    <div key={`${person.id}-${person.job}`} className="flex items-center gap-4">
-                      <Link href={`/search?tab=movie&person=${person.id}`} className="flex items-center gap-4 cursor-pointer hover:opacity-90 transition-opacity">
-                        <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-muted">
-                          <Image
-                            src={
-                              person.profile_path
-                                ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                                : "/placeholder.svg?height=64&width=64"
-                            }
-                            alt={person.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-medium hover:text-primary transition-colors">{person.name}</div>
-                          <div className="text-sm text-muted-foreground">{person.job}</div>
-                        </div>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
+                {movie.credits?.crew && movie.credits.crew.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {movie.credits.crew.slice(0, 8).map((person) => (
+                      <div key={`${person.id}-${person.job}`} className="flex items-center gap-4">
+                        <Link href={`/search?tab=movie&person=${person.id}`} className="flex items-center gap-4 cursor-pointer hover:opacity-90 transition-opacity">
+                          <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-muted">
+                            <Image
+                              src={
+                                person.profile_path
+                                  ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
+                                  : "/placeholder.svg?height=64&width=64"
+                              }
+                              alt={person.name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="font-medium hover:text-primary transition-colors">{person.name}</div>
+                            <div className="text-sm text-muted-foreground">{person.job}</div>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No crew information available for this movie.
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="details" className="space-y-4 mt-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <div className="font-medium">Release Date</div>
-                    <div className="text-muted-foreground">{formatDate(movie.release_date)}</div>
-                  </div>
-                  <div>
-                    <div className="font-medium">Production Companies</div>
-                    <div className="text-muted-foreground">
-                      {movie.production_companies.map((company) => company.name).join(", ")}
-                    </div>
-                  </div>
-                  {movie.budget > 0 && (
+                {movie.release_date || movie.runtime || movie.budget || movie.revenue ? (
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <div className="font-medium">Budget</div>
-                      <div className="text-muted-foreground">{formatCurrency(movie.budget)}</div>
+                      <div className="font-medium">Release Date</div>
+                      <div className="text-muted-foreground">{formatDate(movie.release_date)}</div>
                     </div>
-                  )}
-                  {movie.revenue > 0 && (
                     <div>
-                      <div className="font-medium">Revenue</div>
-                      <div className="text-muted-foreground">{formatCurrency(movie.revenue)}</div>
-                    </div>
-                  )}
-                  {movie.homepage && (
-                    <div>
-                      <div className="font-medium">Homepage</div>
+                      <div className="font-medium">Production Companies</div>
                       <div className="text-muted-foreground">
-                        <a
-                          href={movie.homepage}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          {movie.homepage}
-                        </a>
+                        {movie.production_companies.map((company) => company.name).join(", ")}
                       </div>
                     </div>
-                  )}
-                </div>
+                    {movie.budget > 0 && (
+                      <div>
+                        <div className="font-medium">Budget</div>
+                        <div className="text-muted-foreground">{formatCurrency(movie.budget)}</div>
+                      </div>
+                    )}
+                    {movie.revenue > 0 && (
+                      <div>
+                        <div className="font-medium">Revenue</div>
+                        <div className="text-muted-foreground">{formatCurrency(movie.revenue)}</div>
+                      </div>
+                    )}
+                    {movie.homepage && (
+                      <div>
+                        <div className="font-medium">Homepage</div>
+                        <div className="text-muted-foreground">
+                          <a
+                            href={movie.homepage}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {movie.homepage}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No additional details available for this movie.
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>

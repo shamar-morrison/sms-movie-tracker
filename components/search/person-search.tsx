@@ -13,12 +13,14 @@ export default function PersonSearch() {
   const [query, setQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [results, setResults] = useState<any[]>([])
+  const [searchPerformed, setSearchPerformed] = useState(false)
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
 
     setIsSearching(true)
+    setSearchPerformed(true)
 
     try {
       const searchResults = await searchPeople(query)
@@ -55,7 +57,20 @@ export default function PersonSearch() {
         </Button>
       </form>
 
-      <PersonResults results={results} />
+      {isSearching ? (
+        <div className="text-center py-12">Searching...</div>
+      ) : (
+        !searchPerformed ? (
+          <div className="text-center py-16 text-muted-foreground">
+            Enter an actor or director name above and click search to find people.
+          </div>
+        ) : (
+          <PersonResults 
+            results={results} 
+            showEmptyMessage={searchPerformed} 
+          />
+        )
+      )}
     </div>
   )
 }

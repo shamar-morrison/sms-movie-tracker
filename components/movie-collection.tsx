@@ -99,7 +99,11 @@ export default function MovieCollection({ type }: { type: "collection" | "discov
               ))}
             </div>
             {type === "discover" && (
-              <Button variant="secondary" size="sm" className="mt-3 w-full z-20 relative">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="mt-3 w-full relative z-[5]"
+              >
                 Add to Collection
               </Button>
             )}

@@ -19,6 +19,7 @@ export default function MovieSearch() {
   const [isSearching, setIsSearching] = useState(false)
   const [results, setResults] = useState<any[]>([])
   const [personName, setPersonName] = useState<string | null>(null)
+  const [searchPerformed, setSearchPerformed] = useState(false)
 
   useEffect(() => {
     if (personId) {
@@ -28,6 +29,7 @@ export default function MovieSearch() {
 
   const searchByPerson = async (id: string) => {
     setIsSearching(true);
+    setSearchPerformed(true);
     try {
       const personDetails = await getPersonById(id);
 
@@ -48,6 +50,7 @@ export default function MovieSearch() {
     if (!query.trim()) return
 
     setIsSearching(true)
+    setSearchPerformed(true)
     setPersonName(null) // Reset person name when searching by title
 
     try {
@@ -64,6 +67,7 @@ export default function MovieSearch() {
   const clearPersonFilter = () => {
     setPersonName(null)
     setResults([])
+    setSearchPerformed(false)
     router.push("/search?tab=movie")
   }
 
@@ -108,9 +112,18 @@ export default function MovieSearch() {
       )}
 
       {isSearching ? (
-        <div className="text-center py-8">Searching...</div>
+        <div className="text-center py-12">Searching...</div>
       ) : (
-        <MovieResults results={results} />
+        !searchPerformed ? (
+          <div className="text-center py-16 text-muted-foreground">
+            Enter a movie title above and click search to find movies.
+          </div>
+        ) : (
+          <MovieResults 
+            results={results} 
+            showEmptyMessage={searchPerformed}
+          />
+        )
       )}
     </div>
   )
