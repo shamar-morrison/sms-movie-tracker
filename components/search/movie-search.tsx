@@ -5,7 +5,7 @@ import type React from "react"
 import MovieResults from "@/components/search/movie-results"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getMoviesByPerson, searchMoviesByTitle } from "@/lib/tmdb"
+import { getMoviesByPerson, getPersonById, searchMoviesByTitle } from "@/lib/tmdb"
 import { Search } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -19,7 +19,6 @@ export default function MovieSearch() {
   const [results, setResults] = useState<any[]>([])
   const [personName, setPersonName] = useState<string | null>(null)
 
-  // Search by person ID when the component mounts if personId is present
   useEffect(() => {
     if (personId) {
       searchByPerson(personId);
@@ -29,11 +28,12 @@ export default function MovieSearch() {
   const searchByPerson = async (id: string) => {
     setIsSearching(true);
     try {
+      const personDetails = await getPersonById(id);
+
       const searchResults = await getMoviesByPerson(id);
       setResults(searchResults);
-      // The person name would typically come from a different API call or state
-      // For now, we'll just indicate we're showing person results
-      setPersonName("Selected Person");
+
+      setPersonName(personDetails?.name || "Selected Person");
     } catch (error) {
       console.error("Error fetching movies by person:", error);
       setResults([]);
@@ -64,11 +64,11 @@ export default function MovieSearch() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold mb-2">
-          {personName ? `Movies with ${personName}` : "Search by Movie Title"}
+          {personName ? `Movies involving ${personName}` : "Search by Movie Title"}
         </h2>
         <p className="text-muted-foreground">
           {personName 
-            ? "Showing movies featuring this person." 
+            ? `Showing movies featuring ${personName}.` 
             : "Find movies by their title. Enter a full or partial movie name."}
         </p>
       </div>

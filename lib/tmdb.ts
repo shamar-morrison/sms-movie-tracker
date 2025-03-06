@@ -169,3 +169,14 @@ export async function getMoviesByPerson(personId: string): Promise<TMDBMovie[]> 
   }
 }
 
+// Get person details by ID
+export async function getPersonById(personId: string): Promise<TMDBPerson | null> {
+  try {
+    const data = await fetchFromTMDB(`/person/${personId}`)
+    return data
+  } catch (error) {
+    console.error("Error fetching person details:", error)
+    return null
+  }
+}
+
