@@ -228,7 +228,7 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                     <div>
                       <div className="font-medium">Production Companies</div>
                       <div className="text-muted-foreground">
-                        {movie.production_companies.map((company) => company.name).join(", ")}
+                        {movie.production_companies?.map((company) => company.name).join(", ") || '-'}
                       </div>
                     </div>
                     {movie.budget > 0 && (

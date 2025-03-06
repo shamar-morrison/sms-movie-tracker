@@ -17,7 +17,7 @@ export interface TMDBMovie {
     id: number
     name: string
   }[]
-  production_companies: {
+  production_companies?: {
     id: number
     name: string
     logo_path: string | null
