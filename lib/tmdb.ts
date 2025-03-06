@@ -17,7 +17,7 @@ export interface TMDBMovie {
     id: number
     name: string
   }[]
-  production_companies?: {
+  production_companies: {
     id: number
     name: string
     logo_path: string | null
@@ -206,26 +206,15 @@ export async function getMoviesByPerson(personId: string): Promise<TMDBMovie[]> 
   }
 }
 
-// Get person details by ID
-export async function getPersonById(personId: string): Promise<TMDBPerson | null> {
-  try {
-    const data = await fetchFromTMDB(`/person/${personId}`)
-    return data
-  } catch (error) {
-    console.error("Error fetching person details:", error)
-    return null
-  }
-}
-
 /**
  * Discovers more movies by genre and year range for a specific page
  */
-export const loadMoreMoviesByGenre = async (
+export async function loadMoreMoviesByGenre(
   genreId: string,
   fromYear: number,
   toYear: number,
   page: number
-): Promise<TMDBMovie[]> => {
+): Promise<TMDBMovie[]> {
   try {
     const fromDate = `${fromYear}-01-01`
     const toDate = `${toYear}-12-31`
@@ -251,6 +240,19 @@ export const loadMoreMoviesByGenre = async (
   } catch (error) {
     console.error('Error discovering more movies:', error)
     return []
+  }
+}
+
+/**
+ * Get details for a specific person by ID
+ */
+export async function getPersonById(personId: string): Promise<TMDBPerson | null> {
+  try {
+    const data = await fetchFromTMDB(`/person/${personId}`)
+    return data
+  } catch (error) {
+    console.error("Error fetching person details:", error)
+    return null
   }
 }
 

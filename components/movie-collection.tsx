@@ -23,7 +23,8 @@ export default function MovieCollection({ type }: { type: "collection" | "discov
         if (type === "collection") {
           result = await getMovieCollection()
         } else if (type === "discover" && genreIdParam) {
-          result = await discoverMovies(genreIdParam, 1900, new Date().getFullYear())
+          const response = await discoverMovies(genreIdParam, 1900, new Date().getFullYear())
+          result = response.results
         } else {
           result = await getDiscoverMovies()
         }
@@ -67,7 +68,7 @@ export default function MovieCollection({ type }: { type: "collection" | "discov
               src={
                 movie.poster_path
                   ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                  : "/placeholder.svg?height=450&width=300"
+                  : "/placeholder-movie.svg"
               }
               alt={movie.title}
               fill
@@ -99,11 +100,7 @@ export default function MovieCollection({ type }: { type: "collection" | "discov
               ))}
             </div>
             {type === "discover" && (
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="mt-3 w-full relative z-[5]"
-              >
+              <Button variant="secondary" size="sm" className="mt-3 w-full z-20 relative">
                 Add to Collection
               </Button>
             )}

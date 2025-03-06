@@ -8,13 +8,11 @@ interface MovieResultsProps {
   showEmptyMessage?: boolean
 }
 
-export default function MovieResults({ results, showEmptyMessage = true }: MovieResultsProps) {
-  if (results.length === 0 && showEmptyMessage) {
-    return <div className="text-center py-16 text-muted-foreground">No results found. Try a different search.</div>
-  }
-  
+export default function MovieResults({ results, showEmptyMessage = false }: MovieResultsProps) {
   if (results.length === 0) {
-    return null
+    return showEmptyMessage ? 
+      <div className="text-center py-8 text-muted-foreground">No results found. Try a different search.</div> : 
+      null
   }
 
   return (
@@ -45,11 +43,7 @@ export default function MovieResults({ results, showEmptyMessage = true }: Movie
                 <span className="text-sm">{movie.vote_average.toFixed(1)}</span>
               </div>
             </div>
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              className="mt-3 w-full relative z-[5]"
-            >
+            <Button variant="secondary" size="sm" className="mt-3 w-full z-20 relative">
               Add to Collection
             </Button>
           </div>

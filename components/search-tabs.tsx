@@ -5,6 +5,7 @@ import { LoadMoreButton } from "@/components/search/load-more-button"
 import MovieSearch from "@/components/search/movie-search"
 import PersonSearch from "@/components/search/person-search"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { TMDBMovie, TMDBPerson } from "@/lib/tmdb"
 import { discoverMovies, getMoviesByPerson, getPersonById, loadMoreMoviesByGenre, searchPeople, searchMoviesByTitle as tmdbSearchMovies } from "@/lib/tmdb"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -12,126 +13,46 @@ import { useEffect, useState } from "react"
 export default function SearchTabs() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab") || "movie"
-  const personParam = searchParams.get("person")
   const [activeTab, setActiveTab] = useState(tabParam)
   const router = useRouter()
-  
-  // Movie search state
-  const [movieQuery, setMovieQuery] = useState("")
-  const [movieResults, setMovieResults] = useState<any[]>([])
-  const [movieSearchPerformed, setMovieSearchPerformed] = useState(false)
-  
-  // Person search state 
-  const [personQuery, setPersonQuery] = useState("")
-  const [personResults, setPersonResults] = useState<any[]>([])
-  const [personSearchPerformed, setPersonSearchPerformed] = useState(false)
-  
-  // Person filter for movie search
-  const [personName, setPersonName] = useState<string | null>(null)
-  
-  // Genre search state
-  const [selectedGenre, setSelectedGenre] = useState("")
-  const [yearRange, setYearRange] = useState([1990, new Date().getFullYear()])
-  const [genreResults, setGenreResults] = useState<any[]>([])
-  const [genreSearchPerformed, setGenreSearchPerformed] = useState(false)
-  
-  // Shared loading state
-  const [isSearching, setIsSearching] = useState(false)
-  
-  // pagination state for genre search
-  const [currentGenrePage, setCurrentGenrePage] = useState(2) // Start at 2 since we already load pages 1-2 initially
-  const [totalGenreResults, setTotalGenreResults] = useState(0)
-  const [totalGenrePages, setTotalGenrePages] = useState(0)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
   
   // Update activeTab when URL parameters change (browser navigation)
   useEffect(() => {
     setActiveTab(tabParam)
   }, [tabParam])
 
-  useEffect(() => {
-    if (personParam && !personName) {
-      searchMoviesByPerson(personParam)
-    }
-  }, [personParam, personName])
-
   const handleTabChange = (value: string) => {
     setActiveTab(value)
-    
-    // Keep the person parameter if it exists when switching to movie tab
-    if (value === "movie" && personParam) {
-      router.push(`/search?tab=${value}&person=${personParam}`, { scroll: false })
-    } else {
-      router.push(`/search?tab=${value}`, { scroll: false })
-    }
+    router.push(`/search?tab=${value}`, { scroll: false })
   }
 
-  const searchMoviesByTitle = async (query: string) => {
-    if (!query.trim()) return
-    
-    setIsSearching(true)
-    setMovieSearchPerformed(true)
-    
-    try {
-      const results = await tmdbSearchMovies(query)
-      setMovieResults(results)
-      setPersonName(null)
-    } catch (error) {
-      console.error("Error searching movies:", error)
-      setMovieResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
+  // Add pagination state for genre search
+  const [currentGenrePage, setCurrentGenrePage] = useState(2) // Start at 2 since we already load pages 1-2 initially
+  const [totalGenreResults, setTotalGenreResults] = useState(0)
+  const [totalGenrePages, setTotalGenrePages] = useState(0)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   
-  const searchMoviesByPerson = async (id: string) => {
-    setIsSearching(true)
-    setMovieSearchPerformed(true)
-    
-    try {
-
-      const personDetails = await getPersonById(id)
-
-      const results = await getMoviesByPerson(id)
-      setMovieResults(results)
-      setPersonName(personDetails?.name || "Unknown Person")
-
-      if (activeTab !== "movie") {
-        setActiveTab("movie")
-        router.push(`/search?tab=movie&person=${id}`, { scroll: false })
-      }
-    } catch (error) {
-      console.error("Error fetching movies by person:", error)
-      setMovieResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
+  // Movie search state
+  const [movieQuery, setMovieQuery] = useState("")
+  const [movieResults, setMovieResults] = useState<TMDBMovie[]>([])
+  const [movieSearchPerformed, setMovieSearchPerformed] = useState(false)
   
-  const clearPersonFilter = () => {
-    setPersonName(null)
-    setMovieResults([])
-    setMovieSearchPerformed(false)
-    router.push("/search?tab=movie", { scroll: false })
-  }
-
-  const searchPeopleByName = async (query: string) => {
-    if (!query.trim()) return
-    
-    setIsSearching(true)
-    setPersonSearchPerformed(true)
-    
-    try {
-      const results = await searchPeople(query)
-      setPersonResults(results)
-    } catch (error) {
-      console.error("Error searching people:", error)
-      setPersonResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
-
+  // Person search state
+  const [personQuery, setPersonQuery] = useState("")
+  const [personResults, setPersonResults] = useState<TMDBPerson[]>([])
+  const [personSearchPerformed, setPersonSearchPerformed] = useState(false)
+  const [_, setSelectedPersonId] = useState<string | null>(null)
+  const [selectedPersonName, setSelectedPersonName] = useState<string | null>(null)
+  
+  // Shared loading state
+  const [isSearching, setIsSearching] = useState(false)
+  
+  // Genre search state
+  const [selectedGenre, setSelectedGenre] = useState("")
+  const [yearRange, setYearRange] = useState([1990, new Date().getFullYear()])
+  const [genreResults, setGenreResults] = useState<TMDBMovie[]>([])
+  const [genreSearchPerformed, setGenreSearchPerformed] = useState(false)
+  
   const searchMoviesByGenre = async (genreId: string) => {
     if (!genreId) return
     
@@ -177,6 +98,77 @@ export default function SearchTabs() {
     }
   }
 
+  // Movie search functions
+  const searchMoviesByTitle = async (query: string) => {
+    if (!query.trim()) return
+    
+    setIsSearching(true)
+    setMovieSearchPerformed(true)
+    
+    try {
+      const results = await tmdbSearchMovies(query)
+      setMovieResults(results)
+    } catch (error) {
+      console.error("Error searching movies:", error)
+      setMovieResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+  
+  const clearSelectedPerson = () => {
+    setSelectedPersonId(null)
+    setSelectedPersonName(null)
+    setMovieResults([])
+    setMovieSearchPerformed(false)
+  }
+
+  // Add missing search functions
+  const searchPeopleByName = async (query: string) => {
+    if (!query.trim()) return
+    
+    setIsSearching(true)
+    setPersonSearchPerformed(true)
+    
+    try {
+      const results = await searchPeople(query)
+      setPersonResults(results)
+    } catch (error) {
+      console.error("Error searching people:", error)
+      setPersonResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+  
+  const selectPerson = async (personId: string) => {
+    try {
+      setIsSearching(true)
+      
+      // Get person details
+      const person = await getPersonById(personId)
+      if (!person) {
+        console.error("Person not found:", personId)
+        return
+      }
+      
+      setSelectedPersonId(personId)
+      setSelectedPersonName(person.name)
+      
+      // Get movies by this person
+      const movies = await getMoviesByPerson(personId)
+      setMovieResults(movies)
+      setMovieSearchPerformed(true)
+      
+      // Switch to movie tab to show results
+      handleTabChange("movie")
+    } catch (error) {
+      console.error("Error selecting person:", error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
       <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -190,10 +182,10 @@ export default function SearchTabs() {
           setQuery={setMovieQuery}
           results={movieResults}
           isSearching={isSearching}
-          personName={personName}
+          personName={selectedPersonName}
           searchPerformed={movieSearchPerformed}
           onSearch={searchMoviesByTitle}
-          onClearPerson={clearPersonFilter}
+          onClearPerson={clearSelectedPerson}
         />
       </TabsContent>
       <TabsContent value="person" className="space-y-6">
@@ -204,11 +196,11 @@ export default function SearchTabs() {
           isSearching={isSearching}
           searchPerformed={personSearchPerformed}
           onSearch={searchPeopleByName}
-          onSelectPerson={searchMoviesByPerson}
+          onSelectPerson={selectPerson}
         />
       </TabsContent>
       <TabsContent value="genre" className="space-y-4">
-        <GenreSearch 
+        <GenreSearch
           selectedGenre={selectedGenre}
           setSelectedGenre={setSelectedGenre}
           yearRange={yearRange}
@@ -218,7 +210,8 @@ export default function SearchTabs() {
           searchPerformed={genreSearchPerformed}
           onSearch={searchMoviesByGenre}
         />
-
+        
+        {/* Add Load More button for genre results */}
         {genreSearchPerformed && genreResults.length > 0 && (
           <LoadMoreButton
             onClick={loadMoreGenreResults}
