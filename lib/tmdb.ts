@@ -143,18 +143,55 @@ export async function searchPeople(query: string): Promise<TMDBPerson[]> {
 }
 
 // Get movies by genre and year range
-export async function discoverMovies(genreId: string, startYear: number, endYear: number): Promise<TMDBMovie[]> {
+export async function discoverMovies(
+  genreId: string, 
+  startYear: number, 
+  endYear: number
+): Promise<{ 
+  results: TMDBMovie[], 
+  totalResults: number, 
+  totalPages: number 
+}> {
   try {
-    const data = await fetchFromTMDB("/discover/movie", {
+    // First page
+    const firstPageData = await fetchFromTMDB("/discover/movie", {
       with_genres: genreId,
-      "primary_release_date.gte": `${startYear}-01-01`,
-      "primary_release_date.lte": `${endYear}-12-31`,
+      "release_date.gte": `${startYear}-01-01`,
+      "release_date.lte": `${endYear}-12-31`,
       sort_by: "popularity.desc",
+      page: "1",
+      include_adult: "false"
     })
-    return data.results
+    
+    // For better results, we'll fetch the second page too
+    const secondPageData = await fetchFromTMDB("/discover/movie", {
+      with_genres: genreId,
+      "release_date.gte": `${startYear}-01-01`,
+      "release_date.lte": `${endYear}-12-31`,
+      sort_by: "popularity.desc",
+      page: "2",
+      include_adult: "false"
+    })
+    
+    // Combine results from both pages
+    const combinedResults = [...firstPageData.results, ...secondPageData.results]
+    
+    // Log the number of results and year range for debugging
+    console.log(`Found ${combinedResults.length} movies for genre ${genreId} between ${startYear}-${endYear}`)
+    console.log(`Total results available: ${firstPageData.total_results}, Total pages: ${firstPageData.total_pages}`)
+    
+    return {
+      results: combinedResults,
+      totalResults: firstPageData.total_results,
+      totalPages: firstPageData.total_pages
+    }
   } catch (error) {
     console.error("Error discovering movies:", error)
-    return []
+    return {
+      results: [],
+      totalResults: 0,
+      totalPages: 0
+    }
   }
 }
 
@@ -177,6 +214,43 @@ export async function getPersonById(personId: string): Promise<TMDBPerson | null
   } catch (error) {
     console.error("Error fetching person details:", error)
     return null
+  }
+}
+
+/**
+ * Discovers more movies by genre and year range for a specific page
+ */
+export const loadMoreMoviesByGenre = async (
+  genreId: string,
+  fromYear: number,
+  toYear: number,
+  page: number
+): Promise<TMDBMovie[]> => {
+  try {
+    const fromDate = `${fromYear}-01-01`
+    const toDate = `${toYear}-12-31`
+    
+    const response = await fetchFromTMDB('/discover/movie', {
+      with_genres: genreId,
+      'release_date.gte': fromDate,
+      'release_date.lte': toDate,
+      sort_by: 'popularity.desc',
+      page: page.toString(),
+      include_adult: 'false'
+    })
+    
+    if (!response.results) {
+      console.error('No results found in API response:', response)
+      return []
+    }
+    
+    console.log(`Found ${response.results.length} additional movies on page ${page} for genre ${genreId}`)
+    console.log(`Total results available: ${response.total_results}, Total pages: ${response.total_pages}`)
+    
+    return response.results
+  } catch (error) {
+    console.error('Error discovering more movies:', error)
+    return []
   }
 }
 

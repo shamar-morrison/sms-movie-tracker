@@ -1,10 +1,11 @@
 "use client"
 
 import GenreSearch from "@/components/search/genre-search"
+import { LoadMoreButton } from "@/components/search/load-more-button"
 import MovieSearch from "@/components/search/movie-search"
 import PersonSearch from "@/components/search/person-search"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { discoverMovies, getMoviesByPerson, getPersonById, searchPeople, searchMoviesByTitle as tmdbSearchMovies } from "@/lib/tmdb"
+import { discoverMovies, getMoviesByPerson, getPersonById, loadMoreMoviesByGenre, searchPeople, searchMoviesByTitle as tmdbSearchMovies } from "@/lib/tmdb"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
@@ -36,6 +37,12 @@ export default function SearchTabs() {
   
   // Shared loading state
   const [isSearching, setIsSearching] = useState(false)
+  
+  // pagination state for genre search
+  const [currentGenrePage, setCurrentGenrePage] = useState(2) // Start at 2 since we already load pages 1-2 initially
+  const [totalGenreResults, setTotalGenreResults] = useState(0)
+  const [totalGenrePages, setTotalGenrePages] = useState(0)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   
   // Update activeTab when URL parameters change (browser navigation)
   useEffect(() => {
@@ -132,13 +139,41 @@ export default function SearchTabs() {
     setGenreSearchPerformed(true)
     
     try {
-      const results = await discoverMovies(genreId, yearRange[0], yearRange[1])
+      console.log(`Searching for movies in genre ${genreId} with year range: ${yearRange[0]}-${yearRange[1]}`)
+      const { results, totalResults, totalPages } = await discoverMovies(genreId, yearRange[0], yearRange[1])
       setGenreResults(results)
+      setTotalGenreResults(totalResults)
+      setTotalGenrePages(totalPages)
+      setCurrentGenrePage(3) // Reset to page 3 for next load more (since we already loaded 1-2)
     } catch (error) {
       console.error("Error discovering movies:", error)
       setGenreResults([])
+      setTotalGenreResults(0)
+      setTotalGenrePages(0)
     } finally {
       setIsSearching(false)
+    }
+  }
+  
+  const loadMoreGenreResults = async () => {
+    if (!selectedGenre || currentGenrePage > totalGenrePages) return
+    
+    setIsLoadingMore(true)
+    
+    try {
+      const additionalMovies = await loadMoreMoviesByGenre(
+        selectedGenre, 
+        yearRange[0], 
+        yearRange[1], 
+        currentGenrePage
+      )
+      
+      setGenreResults(prev => [...prev, ...additionalMovies])
+      setCurrentGenrePage(prev => prev + 1)
+    } catch (error) {
+      console.error("Error loading more movies:", error)
+    } finally {
+      setIsLoadingMore(false)
     }
   }
 
@@ -172,7 +207,7 @@ export default function SearchTabs() {
           onSelectPerson={searchMoviesByPerson}
         />
       </TabsContent>
-      <TabsContent value="genre" className="space-y-6">
+      <TabsContent value="genre" className="space-y-4">
         <GenreSearch 
           selectedGenre={selectedGenre}
           setSelectedGenre={setSelectedGenre}
@@ -183,6 +218,17 @@ export default function SearchTabs() {
           searchPerformed={genreSearchPerformed}
           onSearch={searchMoviesByGenre}
         />
+        
+        {/* Add Load More button for genre results */}
+        {genreSearchPerformed && genreResults.length > 0 && (
+          <LoadMoreButton
+            onClick={loadMoreGenreResults}
+            isLoading={isLoadingMore}
+            hasMoreResults={currentGenrePage <= totalGenrePages}
+            totalResults={totalGenreResults}
+            loadedResults={genreResults.length}
+          />
+        )}
       </TabsContent>
     </Tabs>
   )
