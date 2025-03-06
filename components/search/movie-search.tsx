@@ -27,13 +27,12 @@ export default function MovieSearch({
   personName,
   searchPerformed,
   onSearch,
-  onClearPerson
+  onClearPerson,
 }: MovieSearchProps) {
-  
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
-    
+
     await onSearch(query)
   }
 
@@ -41,19 +40,17 @@ export default function MovieSearch({
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold mb-2">
-          {personName ? `Movies involving ${personName}` : "Search by Movie Title"}
+          {personName
+            ? `Movies involving ${personName}`
+            : "Search by Movie Title"}
         </h2>
         <p className="text-muted-foreground">
-          {personName 
-            ? `Showing movies featuring ${personName}.` 
+          {personName
+            ? `Showing all movies featuring ${personName} as cast or crew member.`
             : "Find movies by their title. Enter a full or partial movie name."}
         </p>
         {personName && (
-          <Button 
-            variant="outline" 
-            className="mt-4" 
-            onClick={onClearPerson}
-          >
+          <Button variant="outline" className="mt-4" onClick={onClearPerson}>
             Back to Search
           </Button>
         )}
@@ -79,19 +76,23 @@ export default function MovieSearch({
 
       {isSearching ? (
         <div className="text-center py-12">Searching...</div>
+      ) : !searchPerformed ? (
+        <div className="text-center py-16 text-muted-foreground">
+          Enter a movie title above and click search to find movies.
+        </div>
       ) : (
-        !searchPerformed ? (
-          <div className="text-center py-16 text-muted-foreground">
-            Enter a movie title above and click search to find movies.
-          </div>
-        ) : (
-          <MovieResults 
-            results={results} 
-            showEmptyMessage={searchPerformed}
-          />
-        )
+        <>
+          {personName && results.length > 0 && (
+            <div className="bg-muted/50 p-4 rounded-lg mb-6">
+              <p className="text-sm font-medium">
+                Showing {results.length} movie{results.length !== 1 ? "s" : ""}{" "}
+                featuring {personName}
+              </p>
+            </div>
+          )}
+          <MovieResults results={results} showEmptyMessage={searchPerformed} />
+        </>
       )}
     </div>
   )
 }
-

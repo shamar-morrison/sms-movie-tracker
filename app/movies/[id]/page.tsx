@@ -169,28 +169,39 @@ export default async function MoviePage({
                 <TabsTrigger value="details">Details</TabsTrigger>
               </TabsList>
               <TabsContent value="cast" className="space-y-4 mt-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Click on a cast member to see all their movies.
+                </p>
                 {movie.credits?.cast && movie.credits.cast.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {movie.credits.cast.slice(0, 8).map((person) => (
                       <div key={person.id} className="space-y-2">
-                        <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-                          <Image
-                            src={
-                              person.profile_path
-                                ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                                : "/placeholder-user.svg"
-                            }
-                            alt={person.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-medium">{person.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {person.character}
+                        <Link
+                          href={`/search?tab=movie&personId=${person.id}&personName=${encodeURIComponent(person.name)}`}
+                          className="block"
+                        >
+                          <div className="relative aspect-square overflow-hidden rounded-lg bg-muted group cursor-pointer">
+                            <Image
+                              src={
+                                person.profile_path
+                                  ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
+                                  : "/placeholder-user.svg"
+                              }
+                              alt={person.name}
+                              fill
+                              className="object-cover transition-transform group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                        </div>
+                          <div>
+                            <div className="font-medium hover:text-primary transition-colors">
+                              {person.name}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {person.character}
+                            </div>
+                          </div>
+                        </Link>
                       </div>
                     ))}
                   </div>
@@ -201,6 +212,9 @@ export default async function MoviePage({
                 )}
               </TabsContent>
               <TabsContent value="crew" className="space-y-4 mt-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Click on a crew member to see all their movies.
+                </p>
                 {movie.credits?.crew && movie.credits.crew.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {movie.credits.crew.slice(0, 8).map((person) => (
@@ -208,24 +222,32 @@ export default async function MoviePage({
                         key={`${person.id}-${person.job}`}
                         className="flex items-center gap-4"
                       >
-                        <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-muted">
-                          <Image
-                            src={
-                              person.profile_path
-                                ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                                : "/placeholder-user.svg"
-                            }
-                            alt={person.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-medium">{person.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {person.job}
+                        <Link
+                          href={`/search?tab=movie&personId=${person.id}&personName=${encodeURIComponent(person.name)}`}
+                          className="flex items-center gap-4 w-full group cursor-pointer"
+                        >
+                          <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-muted">
+                            <Image
+                              src={
+                                person.profile_path
+                                  ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
+                                  : "/placeholder-user.svg"
+                              }
+                              alt={person.name}
+                              fill
+                              className="object-cover transition-transform group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                        </div>
+                          <div>
+                            <div className="font-medium hover:text-primary transition-colors">
+                              {person.name}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {person.job}
+                            </div>
+                          </div>
+                        </Link>
                       </div>
                     ))}
                   </div>

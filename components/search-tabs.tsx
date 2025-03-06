@@ -23,10 +23,23 @@ export default function SearchTabs() {
   const [activeTab, setActiveTab] = useState(tabParam)
   const router = useRouter()
 
+  // Get personId and personName from URL if available
+  const personIdParam = searchParams.get("personId")
+  const personNameParam = searchParams.get("personName")
+
   // Update activeTab when URL parameters change (browser navigation)
   useEffect(() => {
     setActiveTab(tabParam)
   }, [tabParam])
+
+  // Load person movies if personId is in URL
+  useEffect(() => {
+    if (personIdParam && personNameParam) {
+      setSelectedPersonId(personIdParam)
+      setSelectedPersonName(personNameParam)
+      loadMoviesByPerson(personIdParam)
+    }
+  }, [personIdParam, personNameParam])
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -135,6 +148,8 @@ export default function SearchTabs() {
     setSelectedPersonName(null)
     setMovieResults([])
     setMovieSearchPerformed(false)
+    // Update URL to remove personId and personName
+    router.push(`/search?tab=${activeTab}`, { scroll: false })
   }
 
   const searchPeopleByName = async (query: string) => {
@@ -174,6 +189,25 @@ export default function SearchTabs() {
       handleTabChange("movie")
     } catch (error) {
       console.error("Error selecting person:", error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const loadMoviesByPerson = async (personId: string) => {
+    try {
+      setIsSearching(true)
+
+      const movies = await getMoviesByPerson(personId)
+      setMovieResults(movies)
+      setMovieSearchPerformed(true)
+
+      // Switch to movie tab if we're on a different tab
+      if (activeTab !== "movie") {
+        setActiveTab("movie")
+      }
+    } catch (error) {
+      console.error("Error loading movies for person:", error)
     } finally {
       setIsSearching(false)
     }
