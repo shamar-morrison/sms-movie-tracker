@@ -8,11 +8,19 @@ interface PersonResultsProps {
   onSelectPerson?: (id: string) => Promise<void>
 }
 
-export default function PersonResults({ results, showEmptyMessage = true, onSelectPerson }: PersonResultsProps) {
+export default function PersonResults({
+  results,
+  showEmptyMessage = true,
+  onSelectPerson,
+}: PersonResultsProps) {
   if (results.length === 0 && showEmptyMessage) {
-    return <div className="text-center py-16 text-muted-foreground">No results found. Try a different search.</div>
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        No results found. Try a different search.
+      </div>
+    )
   }
-  
+
   if (results.length === 0) {
     return null
   }
@@ -32,8 +40,8 @@ export default function PersonResults({ results, showEmptyMessage = true, onSele
               <Image
                 src={
                   person.profile_path
-                    ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                    : "/placeholder.svg?height=300&width=200"
+                    ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
+                    : "/placeholder-user.svg"
                 }
                 alt={person.name}
                 fill
@@ -42,12 +50,14 @@ export default function PersonResults({ results, showEmptyMessage = true, onSele
             </div>
             <div>
               <div className="font-medium">{person.name}</div>
-              <div className="text-sm text-muted-foreground">{person.known_for_department}</div>
+              <div className="text-sm text-muted-foreground">
+                {person.known_for_department}
+              </div>
             </div>
             {onSelectPerson ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="w-full"
                 onClick={() => handlePersonClick(person.id)}
               >
@@ -55,7 +65,9 @@ export default function PersonResults({ results, showEmptyMessage = true, onSele
               </Button>
             ) : (
               <Button asChild variant="outline" size="sm" className="w-full">
-                <Link href={`/search?tab=movie&person=${person.id}`}>View Movies</Link>
+                <Link href={`/search?tab=movie&person=${person.id}`}>
+                  View Movies
+                </Link>
               </Button>
             )}
           </div>
@@ -64,4 +76,3 @@ export default function PersonResults({ results, showEmptyMessage = true, onSele
     </div>
   )
 }
-

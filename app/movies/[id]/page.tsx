@@ -10,7 +10,11 @@ import { ArrowLeft } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-export default async function MoviePage({ params }: { params: { id: string } }) {
+export default async function MoviePage({
+  params,
+}: {
+  params: { id: string }
+}) {
   const movie = await getMovieById(params.id)
 
   if (!movie) {
@@ -126,20 +130,30 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <div className="text-3xl font-bold">{movie.vote_average.toFixed(1)}</div>
-                  <div className="text-sm text-muted-foreground">TMDB Rating</div>
+                  <div className="text-3xl font-bold">
+                    {movie.vote_average.toFixed(1)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    TMDB Rating
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                   <div className="text-3xl font-bold">{movie.vote_count}</div>
-                  <div className="text-sm text-muted-foreground">Vote Count</div>
+                  <div className="text-sm text-muted-foreground">
+                    Vote Count
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <div className="text-3xl font-bold">{movie.popularity.toFixed(0)}</div>
-                  <div className="text-sm text-muted-foreground">Popularity</div>
+                  <div className="text-3xl font-bold">
+                    {movie.popularity.toFixed(0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Popularity
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -164,7 +178,7 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                             src={
                               person.profile_path
                                 ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                                : "/placeholder.svg?height=200&width=200"
+                                : "/placeholder-user.svg"
                             }
                             alt={person.name}
                             fill
@@ -173,7 +187,9 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                         </div>
                         <div>
                           <div className="font-medium">{person.name}</div>
-                          <div className="text-sm text-muted-foreground">{person.character}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {person.character}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -188,13 +204,16 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                 {movie.credits?.crew && movie.credits.crew.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {movie.credits.crew.slice(0, 8).map((person) => (
-                      <div key={`${person.id}-${person.job}`} className="flex items-center gap-4">
+                      <div
+                        key={`${person.id}-${person.job}`}
+                        className="flex items-center gap-4"
+                      >
                         <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-muted">
                           <Image
                             src={
                               person.profile_path
                                 ? `https://image.tmdb.org/t/p/w200${person.profile_path}`
-                                : "/placeholder.svg?height=64&width=64"
+                                : "/placeholder-user.svg"
                             }
                             alt={person.name}
                             fill
@@ -203,7 +222,9 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                         </div>
                         <div>
                           <div className="font-medium">{person.name}</div>
-                          <div className="text-sm text-muted-foreground">{person.job}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {person.job}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -215,28 +236,39 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
                 )}
               </TabsContent>
               <TabsContent value="details" className="space-y-4 mt-4">
-                {movie.release_date || movie.runtime || movie.budget || movie.revenue ? (
+                {movie.release_date ||
+                movie.runtime ||
+                movie.budget ||
+                movie.revenue ? (
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <div className="font-medium">Release Date</div>
-                      <div className="text-muted-foreground">{formatDate(movie.release_date)}</div>
+                      <div className="text-muted-foreground">
+                        {formatDate(movie.release_date)}
+                      </div>
                     </div>
                     <div>
                       <div className="font-medium">Production Companies</div>
                       <div className="text-muted-foreground">
-                        {movie.production_companies.map((company) => company.name).join(", ")}
+                        {movie.production_companies
+                          .map((company) => company.name)
+                          .join(", ")}
                       </div>
                     </div>
                     {movie.budget > 0 && (
                       <div>
                         <div className="font-medium">Budget</div>
-                        <div className="text-muted-foreground">{formatCurrency(movie.budget)}</div>
+                        <div className="text-muted-foreground">
+                          {formatCurrency(movie.budget)}
+                        </div>
                       </div>
                     )}
                     {movie.revenue > 0 && (
                       <div>
                         <div className="font-medium">Revenue</div>
-                        <div className="text-muted-foreground">{formatCurrency(movie.revenue)}</div>
+                        <div className="text-muted-foreground">
+                          {formatCurrency(movie.revenue)}
+                        </div>
                       </div>
                     )}
                     {movie.homepage && (
@@ -268,4 +300,3 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
     </div>
   )
 }
-

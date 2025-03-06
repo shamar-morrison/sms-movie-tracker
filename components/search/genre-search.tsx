@@ -1,12 +1,18 @@
 "use client"
 
 import type React from "react"
+import { Dispatch, SetStateAction } from "react"
 
 import MovieResults from "@/components/search/movie-results"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Dispatch, SetStateAction } from "react"
 
 interface GenreSearchProps {
   selectedGenre: string
@@ -27,9 +33,8 @@ export default function GenreSearch({
   results,
   isSearching,
   searchPerformed,
-  onSearch
+  onSearch,
 }: GenreSearchProps) {
-  
   const genres = [
     { id: 28, name: "Action" },
     { id: 12, name: "Adventure" },
@@ -62,8 +67,12 @@ export default function GenreSearch({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-2">Discover by Genre and Year</h2>
-        <p className="text-muted-foreground">Find movies by selecting a genre and release year range.</p>
+        <h2 className="text-xl font-semibold mb-2">
+          Discover by Genre and Year
+        </h2>
+        <p className="text-muted-foreground">
+          Find movies by selecting a genre and release year range.
+        </p>
       </div>
 
       <form onSubmit={handleSearch} className="space-y-6">
@@ -75,7 +84,8 @@ export default function GenreSearch({
             <Select value={selectedGenre} onValueChange={setSelectedGenre}>
               <SelectTrigger id="genre" className="w-full max-w-xs">
                 <SelectValue placeholder="Select a genre">
-                  {genres.find(g => g.id.toString() === selectedGenre)?.name || "Select a genre"}
+                  {genres.find((g) => g.id.toString() === selectedGenre)
+                    ?.name || "Select a genre"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -89,7 +99,10 @@ export default function GenreSearch({
           </div>
 
           <div>
-            <label htmlFor="year-range" className="block text-sm font-medium mb-1">
+            <label
+              htmlFor="year-range"
+              className="block text-sm font-medium mb-1"
+            >
               Release Year Range: {yearRange[0]} - {yearRange[1]}
             </label>
             <Slider
@@ -111,19 +124,14 @@ export default function GenreSearch({
 
       {isSearching ? (
         <div className="text-center py-12">Searching...</div>
+      ) : !searchPerformed ? (
+        <div className="text-center py-16 text-muted-foreground">
+          Select a genre and year range above, then click "Discover Movies" to
+          see results.
+        </div>
       ) : (
-        !searchPerformed ? (
-          <div className="text-center py-16 text-muted-foreground">
-            Select a genre and year range above, then click "Discover Movies" to see results.
-          </div>
-        ) : (
-          <MovieResults 
-            results={results} 
-            showEmptyMessage={searchPerformed}
-          />
-        )
+        <MovieResults results={results} showEmptyMessage={searchPerformed} />
       )}
     </div>
   )
 }
-

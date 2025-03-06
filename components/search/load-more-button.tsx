@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
 
 interface LoadMoreButtonProps {
   onClick: () => void
@@ -14,10 +14,10 @@ export function LoadMoreButton({
   isLoading,
   hasMoreResults,
   totalResults,
-  loadedResults
+  loadedResults,
 }: LoadMoreButtonProps) {
   if (!hasMoreResults) return null
-  
+
   return (
     <div className="w-full flex flex-col items-center justify-center mt-4 mb-8">
       {totalResults && loadedResults && (
@@ -25,9 +25,9 @@ export function LoadMoreButton({
           Showing {loadedResults} of {totalResults} results
         </p>
       )}
-      <Button 
-        variant="outline" 
-        onClick={onClick} 
+      <Button
+        variant="outline"
+        onClick={onClick}
         disabled={isLoading || !hasMoreResults}
         className="min-w-[200px]"
       >
@@ -37,7 +37,7 @@ export function LoadMoreButton({
             Loading...
           </>
         ) : (
-          'Load More Results'
+          "Load More Results"
         )}
       </Button>
     </div>
