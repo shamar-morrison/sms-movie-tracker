@@ -6,21 +6,30 @@ import MovieResults from "@/components/search/movie-results"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { discoverMovies } from "@/lib/tmdb"
-import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Dispatch, SetStateAction } from "react"
 
-export default function GenreSearch() {
-  const searchParams = useSearchParams()
-  const genreIdParam = searchParams.get("genreId")
-  const genreNameParam = searchParams.get("genre")
+interface GenreSearchProps {
+  selectedGenre: string
+  setSelectedGenre: Dispatch<SetStateAction<string>>
+  yearRange: number[]
+  setYearRange: Dispatch<SetStateAction<number[]>>
+  results: any[]
+  isSearching: boolean
+  searchPerformed: boolean
+  onSearch: (genreId: string) => Promise<void>
+}
+
+export default function GenreSearch({
+  selectedGenre,
+  setSelectedGenre,
+  yearRange,
+  setYearRange,
+  results,
+  isSearching,
+  searchPerformed,
+  onSearch
+}: GenreSearchProps) {
   
-  const [selectedGenre, setSelectedGenre] = useState(genreIdParam || "")
-  const [yearRange, setYearRange] = useState([1990, new Date().getFullYear()])
-  const [isSearching, setIsSearching] = useState(false)
-  const [results, setResults] = useState<any[]>([])
-  const [searchPerformed, setSearchPerformed] = useState(false)
-
   const genres = [
     { id: 28, name: "Action" },
     { id: 12, name: "Adventure" },
@@ -43,36 +52,11 @@ export default function GenreSearch() {
     { id: 37, name: "Western" },
   ]
 
-  useEffect(() => {
-    // Auto search when component loads with genreId parameter
-    if (genreIdParam) {
-      performSearch(genreIdParam);
-    }
-  }, [genreIdParam]);
-
-  const performSearch = async (genreId: string) => {
-    if (!genreId) return;
-    
-    setIsSearching(true);
-    setSearchPerformed(true);
-
-    try {
-      const searchResults = await discoverMovies(genreId, yearRange[0], yearRange[1]);
-      setResults(searchResults);
-      console.log("Found movies:", searchResults.length);
-    } catch (error) {
-      console.error("Error discovering movies:", error);
-      setResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }
-
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedGenre) return
 
-    performSearch(selectedGenre);
+    await onSearch(selectedGenre)
   }
 
   return (
@@ -91,7 +75,7 @@ export default function GenreSearch() {
             <Select value={selectedGenre} onValueChange={setSelectedGenre}>
               <SelectTrigger id="genre" className="w-full max-w-xs">
                 <SelectValue placeholder="Select a genre">
-                  {genreNameParam || genres.find(g => g.id.toString() === selectedGenre)?.name || "Select a genre"}
+                  {genres.find(g => g.id.toString() === selectedGenre)?.name || "Select a genre"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>

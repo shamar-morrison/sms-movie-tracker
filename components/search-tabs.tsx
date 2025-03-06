@@ -4,23 +4,142 @@ import GenreSearch from "@/components/search/genre-search"
 import MovieSearch from "@/components/search/movie-search"
 import PersonSearch from "@/components/search/person-search"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { discoverMovies, getMoviesByPerson, getPersonById, searchPeople, searchMoviesByTitle as tmdbSearchMovies } from "@/lib/tmdb"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 export default function SearchTabs() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab") || "movie"
+  const personParam = searchParams.get("person")
   const [activeTab, setActiveTab] = useState(tabParam)
   const router = useRouter()
+  
+  // Movie search state
+  const [movieQuery, setMovieQuery] = useState("")
+  const [movieResults, setMovieResults] = useState<any[]>([])
+  const [movieSearchPerformed, setMovieSearchPerformed] = useState(false)
+  
+  // Person search state 
+  const [personQuery, setPersonQuery] = useState("")
+  const [personResults, setPersonResults] = useState<any[]>([])
+  const [personSearchPerformed, setPersonSearchPerformed] = useState(false)
+  
+  // Person filter for movie search
+  const [personName, setPersonName] = useState<string | null>(null)
+  
+  // Genre search state
+  const [selectedGenre, setSelectedGenre] = useState("")
+  const [yearRange, setYearRange] = useState([1990, new Date().getFullYear()])
+  const [genreResults, setGenreResults] = useState<any[]>([])
+  const [genreSearchPerformed, setGenreSearchPerformed] = useState(false)
+  
+  // Shared loading state
+  const [isSearching, setIsSearching] = useState(false)
   
   // Update activeTab when URL parameters change (browser navigation)
   useEffect(() => {
     setActiveTab(tabParam)
   }, [tabParam])
 
+  useEffect(() => {
+    if (personParam && !personName) {
+      searchMoviesByPerson(personParam)
+    }
+  }, [personParam, personName])
+
   const handleTabChange = (value: string) => {
     setActiveTab(value)
-    router.push(`/search?tab=${value}`, { scroll: false })
+    
+    // Keep the person parameter if it exists when switching to movie tab
+    if (value === "movie" && personParam) {
+      router.push(`/search?tab=${value}&person=${personParam}`, { scroll: false })
+    } else {
+      router.push(`/search?tab=${value}`, { scroll: false })
+    }
+  }
+
+  const searchMoviesByTitle = async (query: string) => {
+    if (!query.trim()) return
+    
+    setIsSearching(true)
+    setMovieSearchPerformed(true)
+    
+    try {
+      const results = await tmdbSearchMovies(query)
+      setMovieResults(results)
+      setPersonName(null)
+    } catch (error) {
+      console.error("Error searching movies:", error)
+      setMovieResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+  
+  const searchMoviesByPerson = async (id: string) => {
+    setIsSearching(true)
+    setMovieSearchPerformed(true)
+    
+    try {
+
+      const personDetails = await getPersonById(id)
+
+      const results = await getMoviesByPerson(id)
+      setMovieResults(results)
+      setPersonName(personDetails?.name || "Unknown Person")
+
+      if (activeTab !== "movie") {
+        setActiveTab("movie")
+        router.push(`/search?tab=movie&person=${id}`, { scroll: false })
+      }
+    } catch (error) {
+      console.error("Error fetching movies by person:", error)
+      setMovieResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+  
+  const clearPersonFilter = () => {
+    setPersonName(null)
+    setMovieResults([])
+    setMovieSearchPerformed(false)
+    router.push("/search?tab=movie", { scroll: false })
+  }
+
+  const searchPeopleByName = async (query: string) => {
+    if (!query.trim()) return
+    
+    setIsSearching(true)
+    setPersonSearchPerformed(true)
+    
+    try {
+      const results = await searchPeople(query)
+      setPersonResults(results)
+    } catch (error) {
+      console.error("Error searching people:", error)
+      setPersonResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const searchMoviesByGenre = async (genreId: string) => {
+    if (!genreId) return
+    
+    setIsSearching(true)
+    setGenreSearchPerformed(true)
+    
+    try {
+      const results = await discoverMovies(genreId, yearRange[0], yearRange[1])
+      setGenreResults(results)
+    } catch (error) {
+      console.error("Error discovering movies:", error)
+      setGenreResults([])
+    } finally {
+      setIsSearching(false)
+    }
   }
 
   return (
@@ -31,13 +150,39 @@ export default function SearchTabs() {
         <TabsTrigger value="genre">Genre/Year</TabsTrigger>
       </TabsList>
       <TabsContent value="movie" className="space-y-6">
-        <MovieSearch />
+        <MovieSearch 
+          query={movieQuery}
+          setQuery={setMovieQuery}
+          results={movieResults}
+          isSearching={isSearching}
+          personName={personName}
+          searchPerformed={movieSearchPerformed}
+          onSearch={searchMoviesByTitle}
+          onClearPerson={clearPersonFilter}
+        />
       </TabsContent>
       <TabsContent value="person" className="space-y-6">
-        <PersonSearch />
+        <PersonSearch 
+          query={personQuery}
+          setQuery={setPersonQuery}
+          results={personResults}
+          isSearching={isSearching}
+          searchPerformed={personSearchPerformed}
+          onSearch={searchPeopleByName}
+          onSelectPerson={searchMoviesByPerson}
+        />
       </TabsContent>
       <TabsContent value="genre" className="space-y-6">
-        <GenreSearch />
+        <GenreSearch 
+          selectedGenre={selectedGenre}
+          setSelectedGenre={setSelectedGenre}
+          yearRange={yearRange}
+          setYearRange={setYearRange}
+          results={genreResults}
+          isSearching={isSearching}
+          searchPerformed={genreSearchPerformed}
+          onSearch={searchMoviesByGenre}
+        />
       </TabsContent>
     </Tabs>
   )

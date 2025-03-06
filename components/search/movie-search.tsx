@@ -5,70 +5,36 @@ import type React from "react"
 import MovieResults from "@/components/search/movie-results"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getMoviesByPerson, getPersonById, searchMoviesByTitle } from "@/lib/tmdb"
 import { Search } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Dispatch, SetStateAction } from "react"
 
-export default function MovieSearch() {
-  const searchParams = useSearchParams()
-  const personId = searchParams.get("person")
-  const router = useRouter()
+interface MovieSearchProps {
+  query: string
+  setQuery: Dispatch<SetStateAction<string>>
+  results: any[]
+  isSearching: boolean
+  personName: string | null
+  searchPerformed: boolean
+  onSearch: (query: string) => Promise<void>
+  onClearPerson: () => void
+}
+
+export default function MovieSearch({
+  query,
+  setQuery,
+  results,
+  isSearching,
+  personName,
+  searchPerformed,
+  onSearch,
+  onClearPerson
+}: MovieSearchProps) {
   
-  const [query, setQuery] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  const [results, setResults] = useState<any[]>([])
-  const [personName, setPersonName] = useState<string | null>(null)
-  const [searchPerformed, setSearchPerformed] = useState(false)
-
-  useEffect(() => {
-    if (personId) {
-      searchByPerson(personId);
-    }
-  }, [personId]);
-
-  const searchByPerson = async (id: string) => {
-    setIsSearching(true);
-    setSearchPerformed(true);
-    try {
-      const personDetails = await getPersonById(id);
-
-      const searchResults = await getMoviesByPerson(id);
-      setResults(searchResults);
-
-      setPersonName(personDetails?.name || "Selected Person");
-    } catch (error) {
-      console.error("Error fetching movies by person:", error);
-      setResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
-
-    setIsSearching(true)
-    setSearchPerformed(true)
-    setPersonName(null) // Reset person name when searching by title
-
-    try {
-      const searchResults = await searchMoviesByTitle(query)
-      setResults(searchResults)
-    } catch (error) {
-      console.error("Error searching movies:", error)
-      setResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
-
-  const clearPersonFilter = () => {
-    setPersonName(null)
-    setResults([])
-    setSearchPerformed(false)
-    router.push("/search?tab=movie")
+    
+    await onSearch(query)
   }
 
   return (
@@ -86,7 +52,7 @@ export default function MovieSearch() {
           <Button 
             variant="outline" 
             className="mt-4" 
-            onClick={clearPersonFilter}
+            onClick={onClearPerson}
           >
             Back to Search
           </Button>

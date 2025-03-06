@@ -5,33 +5,34 @@ import type React from "react"
 import PersonResults from "@/components/search/person-results"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { searchPeople } from "@/lib/tmdb"
 import { Search } from "lucide-react"
-import { useState } from "react"
+import { Dispatch, SetStateAction } from "react"
 
-export default function PersonSearch() {
-  const [query, setQuery] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  const [results, setResults] = useState<any[]>([])
-  const [searchPerformed, setSearchPerformed] = useState(false)
+interface PersonSearchProps {
+  query: string
+  setQuery: Dispatch<SetStateAction<string>>
+  results: any[]
+  isSearching: boolean
+  searchPerformed: boolean
+  onSearch: (query: string) => Promise<void>
+  onSelectPerson: (id: string) => Promise<void>
+}
+
+export default function PersonSearch({
+  query,
+  setQuery,
+  results,
+  isSearching,
+  searchPerformed,
+  onSearch,
+  onSelectPerson
+}: PersonSearchProps) {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
 
-    setIsSearching(true)
-    setSearchPerformed(true)
-
-    try {
-      const searchResults = await searchPeople(query)
-      setResults(searchResults)
-      console.log("Found people:", searchResults.length)
-    } catch (error) {
-      console.error("Error searching people:", error)
-      setResults([])
-    } finally {
-      setIsSearching(false)
-    }
+    await onSearch(query)
   }
 
   return (
@@ -68,6 +69,7 @@ export default function PersonSearch() {
           <PersonResults 
             results={results} 
             showEmptyMessage={searchPerformed} 
+            onSelectPerson={onSelectPerson}
           />
         )
       )}
