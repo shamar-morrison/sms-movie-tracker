@@ -96,7 +96,6 @@ export default function MovieCollection({
         }
 
         if (isMounted) {
-          // No longer need to update prevMovies here
           setMovies(result)
         }
       } catch (error) {
@@ -128,7 +127,6 @@ export default function MovieCollection({
   // 1. FIRST - Show loading UI for all cases where data is loading
   // This should take precedence over authentication checks
   if ((type === "discover" && loading) || isCollectionLoading || !authReady) {
-    // Always show loading state with skeletons or previous content
     if (
       type === "discover" ||
       (type === "collection" && prevMovies.length > 0)
