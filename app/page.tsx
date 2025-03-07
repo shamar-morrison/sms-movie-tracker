@@ -1,42 +1,54 @@
-import MovieCollection from "@/components/movie-collection"
-import SearchSection from "@/components/search-section"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Clock, Film, Search } from "lucide-react"
+import Link from "next/link"
 
 export default function Home() {
   return (
-    <main className="container py-6">
-      <Tabs defaultValue="collection" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="collection">My Collection</TabsTrigger>
-          <TabsTrigger value="discover">Discover</TabsTrigger>
-        </TabsList>
-        <TabsContent value="collection" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight">
-              My Movie Collection
-            </h2>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                Filter
-              </Button>
-              <Button variant="outline" size="sm">
-                Sort
-              </Button>
-            </div>
+    <main className="container py-12">
+      <div className="max-w-4xl mx-auto text-center space-y-8">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Track Your Movie Journey
+        </h1>
+        <p className="text-xl text-muted-foreground">
+          Discover new films, build your collection, and keep track of what
+          you've watched.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="flex flex-col items-center p-6 bg-muted/50 rounded-lg">
+            <Search className="h-10 w-10 mb-3 text-primary" />
+            <h2 className="text-xl font-semibold mb-2">Discover</h2>
+            <p className="text-muted-foreground mb-4">
+              Find new movies based on your interests
+            </p>
+            <Button asChild className="mt-auto">
+              <Link href="/discover">Browse Movies</Link>
+            </Button>
           </div>
-          <MovieCollection type="collection" />
-        </TabsContent>
-        <TabsContent value="discover" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight">
-              Discover Movies
-            </h2>
-            <SearchSection />
+
+          <div className="flex flex-col items-center p-6 bg-muted/50 rounded-lg">
+            <Film className="h-10 w-10 mb-3 text-primary" />
+            <h2 className="text-xl font-semibold mb-2">Collection</h2>
+            <p className="text-muted-foreground mb-4">
+              Save and organize your favorite movies
+            </p>
+            <Button asChild className="mt-auto">
+              <Link href="/collection">View Collection</Link>
+            </Button>
           </div>
-          <MovieCollection type="discover" />
-        </TabsContent>
-      </Tabs>
+
+          <div className="flex flex-col items-center p-6 bg-muted/50 rounded-lg">
+            <Clock className="h-10 w-10 mb-3 text-primary" />
+            <h2 className="text-xl font-semibold mb-2">Coming Soon</h2>
+            <p className="text-muted-foreground mb-4">
+              Track and get notified about upcoming releases
+            </p>
+            <Button asChild disabled variant="secondary" className="mt-auto">
+              <Link href="#">Coming Soon</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     </main>
   )
 }
