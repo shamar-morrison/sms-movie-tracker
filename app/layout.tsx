@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/navbar"
+import { Providers } from "@/components/providers"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ClerkProvider } from "@clerk/nextjs"
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
@@ -27,11 +27,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Providers>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -43,8 +43,8 @@ export default function RootLayout({
               <div className="flex-1">{children}</div>
             </div>
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </Providers>
+      </body>
+    </html>
   )
 }

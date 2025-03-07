@@ -55,7 +55,10 @@ export interface TMDBPerson {
   known_for: TMDBMovie[]
 }
 
-async function fetchFromTMDB(endpoint: string, params: Record<string, string> = {}) {
+async function fetchFromTMDB(
+  endpoint: string,
+  params: Record<string, string> = {},
+) {
   if (!TMDB_API_KEY) {
     throw new Error("TMDB API key is not set")
   }
@@ -81,7 +84,9 @@ async function fetchFromTMDB(endpoint: string, params: Record<string, string> = 
 // Get a movie by ID
 export async function getMovieById(id: string): Promise<TMDBMovie | null> {
   try {
-    const data = await fetchFromTMDB(`/movie/${id}`, { append_to_response: "credits" })
+    const data = await fetchFromTMDB(`/movie/${id}`, {
+      append_to_response: "credits",
+    })
     return data
   } catch (error) {
     console.error("Error fetching movie:", error)
@@ -89,24 +94,12 @@ export async function getMovieById(id: string): Promise<TMDBMovie | null> {
   }
 }
 
-// Get the user's movie collection
-export async function getMovieCollection(): Promise<TMDBMovie[]> {
-  // we should fetch the user's collection IDs from your database
-  // and then fetch the details for each movie from TMDB
-  // For now, we'll just return some popular movies as a placeholder
-  try {
-    const data = await fetchFromTMDB("/movie/popular")
-    return data.results
-  } catch (error) {
-    console.error("Error fetching movie collection:", error)
-    return []
-  }
-}
-
 // Get movies for discovery
 export async function getDiscoverMovies(): Promise<TMDBMovie[]> {
   try {
-    const data = await fetchFromTMDB("/discover/movie", { sort_by: "popularity.desc" })
+    const data = await fetchFromTMDB("/discover/movie", {
+      sort_by: "popularity.desc",
+    })
     return data.results
   } catch (error) {
     console.error("Error discovering movies:", error)
@@ -123,7 +116,9 @@ export async function getUserRating(movieId: string): Promise<number | null> {
 // Search movies by title
 export async function searchMoviesByTitle(query: string): Promise<TMDBMovie[]> {
   try {
-    const data = await fetchFromTMDB("/search/movie", { query: encodeURIComponent(query) })
+    const data = await fetchFromTMDB("/search/movie", {
+      query: encodeURIComponent(query),
+    })
     return data.results
   } catch (error) {
     console.error("Error searching movies:", error)
@@ -134,7 +129,9 @@ export async function searchMoviesByTitle(query: string): Promise<TMDBMovie[]> {
 // Search people (actors, directors)
 export async function searchPeople(query: string): Promise<TMDBPerson[]> {
   try {
-    const data = await fetchFromTMDB("/search/person", { query: encodeURIComponent(query) })
+    const data = await fetchFromTMDB("/search/person", {
+      query: encodeURIComponent(query),
+    })
     return data.results
   } catch (error) {
     console.error("Error searching people:", error)
@@ -144,13 +141,13 @@ export async function searchPeople(query: string): Promise<TMDBPerson[]> {
 
 // Get movies by genre and year range
 export async function discoverMovies(
-  genreId: string, 
-  startYear: number, 
-  endYear: number
-): Promise<{ 
-  results: TMDBMovie[], 
-  totalResults: number, 
-  totalPages: number 
+  genreId: string,
+  startYear: number,
+  endYear: number,
+): Promise<{
+  results: TMDBMovie[]
+  totalResults: number
+  totalPages: number
 }> {
   try {
     // First page
@@ -160,9 +157,9 @@ export async function discoverMovies(
       "release_date.lte": `${endYear}-12-31`,
       sort_by: "popularity.desc",
       page: "1",
-      include_adult: "false"
+      include_adult: "false",
     })
-    
+
     // For better results, we'll fetch the second page too
     const secondPageData = await fetchFromTMDB("/discover/movie", {
       with_genres: genreId,
@@ -170,33 +167,42 @@ export async function discoverMovies(
       "release_date.lte": `${endYear}-12-31`,
       sort_by: "popularity.desc",
       page: "2",
-      include_adult: "false"
+      include_adult: "false",
     })
-    
+
     // Combine results from both pages
-    const combinedResults = [...firstPageData.results, ...secondPageData.results]
-    
+    const combinedResults = [
+      ...firstPageData.results,
+      ...secondPageData.results,
+    ]
+
     // Log the number of results and year range for debugging
-    console.log(`Found ${combinedResults.length} movies for genre ${genreId} between ${startYear}-${endYear}`)
-    console.log(`Total results available: ${firstPageData.total_results}, Total pages: ${firstPageData.total_pages}`)
-    
+    console.log(
+      `Found ${combinedResults.length} movies for genre ${genreId} between ${startYear}-${endYear}`,
+    )
+    console.log(
+      `Total results available: ${firstPageData.total_results}, Total pages: ${firstPageData.total_pages}`,
+    )
+
     return {
       results: combinedResults,
       totalResults: firstPageData.total_results,
-      totalPages: firstPageData.total_pages
+      totalPages: firstPageData.total_pages,
     }
   } catch (error) {
     console.error("Error discovering movies:", error)
     return {
       results: [],
       totalResults: 0,
-      totalPages: 0
+      totalPages: 0,
     }
   }
 }
 
 // Get movies by person (actor or director)
-export async function getMoviesByPerson(personId: string): Promise<TMDBMovie[]> {
+export async function getMoviesByPerson(
+  personId: string,
+): Promise<TMDBMovie[]> {
   try {
     const data = await fetchFromTMDB(`/person/${personId}/movie_credits`)
     return [...data.cast, ...data.crew]
@@ -213,32 +219,36 @@ export async function loadMoreMoviesByGenre(
   genreId: string,
   fromYear: number,
   toYear: number,
-  page: number
+  page: number,
 ): Promise<TMDBMovie[]> {
   try {
     const fromDate = `${fromYear}-01-01`
     const toDate = `${toYear}-12-31`
-    
-    const response = await fetchFromTMDB('/discover/movie', {
+
+    const response = await fetchFromTMDB("/discover/movie", {
       with_genres: genreId,
-      'release_date.gte': fromDate,
-      'release_date.lte': toDate,
-      sort_by: 'popularity.desc',
+      "release_date.gte": fromDate,
+      "release_date.lte": toDate,
+      sort_by: "popularity.desc",
       page: page.toString(),
-      include_adult: 'false'
+      include_adult: "false",
     })
-    
+
     if (!response.results) {
-      console.error('No results found in API response:', response)
+      console.error("No results found in API response:", response)
       return []
     }
-    
-    console.log(`Found ${response.results.length} additional movies on page ${page} for genre ${genreId}`)
-    console.log(`Total results available: ${response.total_results}, Total pages: ${response.total_pages}`)
-    
+
+    console.log(
+      `Found ${response.results.length} additional movies on page ${page} for genre ${genreId}`,
+    )
+    console.log(
+      `Total results available: ${response.total_results}, Total pages: ${response.total_pages}`,
+    )
+
     return response.results
   } catch (error) {
-    console.error('Error discovering more movies:', error)
+    console.error("Error discovering more movies:", error)
     return []
   }
 }
@@ -246,7 +256,9 @@ export async function loadMoreMoviesByGenre(
 /**
  * Get details for a specific person by ID
  */
-export async function getPersonById(personId: string): Promise<TMDBPerson | null> {
+export async function getPersonById(
+  personId: string,
+): Promise<TMDBPerson | null> {
   try {
     const data = await fetchFromTMDB(`/person/${personId}`)
     return data
@@ -255,4 +267,3 @@ export async function getPersonById(personId: string): Promise<TMDBPerson | null
     return null
   }
 }
-

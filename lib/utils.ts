@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx"
+import { toast } from "sonner"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -21,3 +22,18 @@ export function formatDate(dateString: string): string {
   })
 }
 
+export function showAuthToast() {
+  return toast.error("Please sign in to add movies to your collection", {
+    description: "You need to be signed in to use this feature",
+    action: {
+      label: "Sign In",
+      onClick: () => {
+        document
+          .querySelector<HTMLElement>(
+            'button:has(.cl-userButtonTrigger), button:contains("Sign In")',
+          )
+          ?.click()
+      },
+    },
+  })
+}
