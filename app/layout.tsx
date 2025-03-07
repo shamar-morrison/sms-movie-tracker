@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/navbar"
 import { Providers } from "@/components/providers"
+import ScrollRestoration from "@/components/scroll-restoration"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { Metadata } from "next"
 import localFont from "next/font/local"
@@ -40,6 +41,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <ScrollRestoration />
             <div className="min-h-screen bg-background flex flex-col">
               <Navbar />
               <div className="flex-1">{children}</div>

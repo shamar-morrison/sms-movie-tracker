@@ -1,10 +1,8 @@
-import MovieCollection from "@/components/movie-collection"
-import { Metadata } from "next"
+"use client"
 
-export const metadata: Metadata = {
-  title: "Discover Movies | Movie Tracker",
-  description: "Discover new movies to add to your collection",
-}
+import MovieCollection from "@/components/movie-collection"
+import { MovieSkeleton } from "@/components/ui/movie-skeleton"
+import { Suspense } from "react"
 
 export default function DiscoverPage() {
   return (
@@ -15,7 +13,9 @@ export default function DiscoverPage() {
           Browse through popular movies and add them to your collection
         </p>
       </div>
-      <MovieCollection type="discover" />
+      <Suspense fallback={<MovieSkeleton count={12} />}>
+        <MovieCollection type="discover" />
+      </Suspense>
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { MovieSkeleton } from "@/components/ui/movie-skeleton"
 import { api } from "@/convex/_generated/api"
 import { discoverMovies, getDiscoverMovies, TMDBMovie } from "@/lib/tmdb"
 import { SignInButton, useAuth } from "@clerk/nextjs"
@@ -258,30 +259,7 @@ export default function MovieCollection({
 
     // If no previous movies, show loading skeleton
     const skeletonCount = type === "collection" ? 8 : 12
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {Array.from({ length: skeletonCount }).map((_, index) => (
-          <div
-            key={index}
-            className="relative overflow-hidden rounded-lg border bg-background animate-pulse"
-          >
-            <div className="aspect-[2/3] bg-muted"></div>
-            <div className="p-4 space-y-3">
-              <div className="h-5 w-3/4 bg-muted rounded"></div>
-              <div className="flex justify-between">
-                <div className="h-4 w-1/4 bg-muted rounded"></div>
-                <div className="h-4 w-1/4 bg-muted rounded"></div>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-6 w-1/3 bg-muted rounded-full"></div>
-                <div className="h-6 w-1/3 bg-muted rounded-full"></div>
-              </div>
-              <div className="h-8 w-full bg-muted rounded mt-3"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+    return <MovieSkeleton count={skeletonCount} />
   }
 
   // 2. SECOND - Authentication check (only once loading is complete)
