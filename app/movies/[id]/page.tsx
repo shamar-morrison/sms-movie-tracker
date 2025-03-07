@@ -69,11 +69,10 @@ export default function MoviePage({ params }: { params: { id: string } }) {
     loadMovie()
   }, [params.id])
 
-  // Find a YouTube trailer from videos
   const getYoutubeTrailer = (movie: TMDBMovie) => {
     if (!movie.videos || !movie.videos.results.length) return null
 
-    // First try to find an official trailer
+    // try to find an official trailer
     const trailer = movie.videos.results.find(
       (video) =>
         video.site === "YouTube" &&
