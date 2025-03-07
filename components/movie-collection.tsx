@@ -250,17 +250,18 @@ export default function MovieCollection({
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
               />
-              {type === "collection" && movie.user_rating && (
-                <div className="absolute top-2 right-2 z-20">
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1"
-                  >
-                    <Star className="h-3 w-3 fill-primary text-primary" />
-                    <span>{movie.user_rating}/10</span>
-                  </Badge>
-                </div>
-              )}
+              {(type as "collection" | "discover") === "collection" &&
+                movie.user_rating && (
+                  <div className="absolute top-2 right-2 z-20">
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      <Star className="h-3 w-3 fill-primary text-primary" />
+                      <span>{movie.user_rating}/10</span>
+                    </Badge>
+                  </div>
+                )}
             </div>
             <div className="p-4">
               <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
@@ -398,14 +399,18 @@ export default function MovieCollection({
               fill
               className="object-cover transition-transform group-hover:scale-105"
             />
-            {type === "collection" && movie.user_rating && (
-              <div className="absolute top-2 right-2 z-20">
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-primary text-primary" />
-                  <span>{movie.user_rating}/10</span>
-                </Badge>
-              </div>
-            )}
+            {(type as "collection" | "discover") === "collection" &&
+              movie.user_rating && (
+                <div className="absolute top-2 right-2 z-20">
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
+                    <Star className="h-3 w-3 fill-primary text-primary" />
+                    <span>{movie.user_rating}/10</span>
+                  </Badge>
+                </div>
+              )}
           </div>
           <div className="p-4">
             <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
