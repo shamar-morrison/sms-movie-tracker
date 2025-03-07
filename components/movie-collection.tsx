@@ -38,7 +38,6 @@ export default function MovieCollection({
   // Important: undefined means the query is still loading
   const isUserMoviesLoading = userMovies === undefined
 
-  // Update the list of movie IDs in the collection whenever userMovies changes
   useEffect(() => {
     if (userMovies && Array.isArray(userMovies)) {
       const movieIds = new Set(userMovies.map((movie: any) => movie.movieId))
