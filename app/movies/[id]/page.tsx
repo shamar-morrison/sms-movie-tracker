@@ -74,7 +74,7 @@ export default async function MoviePage({
                   src={
                     movie.poster_path
                       ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                      : "/placeholder.svg?height=450&width=300"
+                      : "/placeholder-movie.svg"
                   }
                   alt={movie.title}
                   fill
