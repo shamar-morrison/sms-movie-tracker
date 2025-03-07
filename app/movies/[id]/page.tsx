@@ -29,7 +29,7 @@ export default async function MoviePage({
           src={
             movie.backdrop_path
               ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-              : "/placeholder.svg?height=500&width=1000"
+              : "/placeholder-backdrop.svg"
           }
           alt={movie.title}
           fill
@@ -55,7 +55,7 @@ export default async function MoviePage({
                   src={
                     movie.poster_path
                       ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                      : "/placeholder.svg?height=450&width=300"
+                      : "/placeholder-movie.svg"
                   }
                   alt={movie.title}
                   fill
@@ -64,9 +64,6 @@ export default async function MoviePage({
               </div>
               <div className="mt-6 space-y-4">
                 <Button className="w-full">Add to Collection</Button>
-                <Button variant="outline" className="w-full">
-                  Add to Watchlist
-                </Button>
               </div>
             </div>
           </div>
@@ -117,9 +114,6 @@ export default async function MoviePage({
 
             <div className="flex md:hidden gap-2">
               <Button className="flex-1">Add to Collection</Button>
-              <Button variant="outline" className="flex-1">
-                Add to Watchlist
-              </Button>
             </div>
 
             <div className="space-y-4">
