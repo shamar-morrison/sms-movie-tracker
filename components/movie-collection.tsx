@@ -39,6 +39,9 @@ export default function MovieCollection({
 
   const userMovies = useQuery(api.movies.getUserMovies)
 
+  // Important: undefined means the query is still loading
+  const isUserMoviesLoading = userMovies === undefined
+
   // Update the list of movie IDs in the collection whenever userMovies changes
   useEffect(() => {
     if (userMovies && Array.isArray(userMovies)) {
@@ -113,12 +116,19 @@ export default function MovieCollection({
       }
     }
 
-    fetchMovies()
+    // Only fetch movies if we're in discover mode OR if userMovies has loaded for collection mode
+    if (type !== "collection" || !isUserMoviesLoading) {
+      fetchMovies()
+    }
 
     return () => {
       isMounted = false
     }
-  }, [type, genreIdParam, isAuthenticated, userMovies])
+  }, [type, genreIdParam, isAuthenticated, userMovies, isUserMoviesLoading])
+
+  // consider both the loading state and the Convex query loading state
+  const isCollectionLoading =
+    type === "collection" && (loading || isUserMoviesLoading)
 
   const handleAddToCollection = async (
     movie: TMDBMovie,
@@ -215,7 +225,7 @@ export default function MovieCollection({
 
   // 1. FIRST - Show loading UI for all cases where data is loading
   // This should take precedence over authentication checks
-  if (loading || !authReady) {
+  if ((type === "discover" && loading) || isCollectionLoading || !authReady) {
     // Always show loading state with skeletons or previous content
     if (
       type === "discover" ||
@@ -365,7 +375,7 @@ export default function MovieCollection({
   // 3. THIRD - Empty collection check (only after loading and auth are confirmed)
   // Only show empty collection message when we're ABSOLUTELY CERTAIN the collection is empty
   if (
-    !loading &&
+    !isCollectionLoading &&
     authReady &&
     isSignedIn &&
     movies.length === 0 &&
@@ -386,7 +396,7 @@ export default function MovieCollection({
   }
 
   // 4. FOURTH - Generic empty state for non-collection views
-  if (movies.length === 0 && !loading && authReady) {
+  if (movies.length === 0 && !loading && authReady && type !== "collection") {
     return (
       <div className="text-center py-10">
         <p className="text-xl text-gray-600">
