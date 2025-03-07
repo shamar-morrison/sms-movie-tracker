@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
+import { Dispatch, SetStateAction } from "react"
 
 import MovieResults from "@/components/search/movie-results"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
-import { Dispatch, SetStateAction } from "react"
 
 interface MovieSearchProps {
   query: string
@@ -85,8 +85,8 @@ export default function MovieSearch({
           {personName && results.length > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg mb-6">
               <p className="text-sm font-medium">
-                Showing {results.length} movie{results.length !== 1 ? "s" : ""}{" "}
-                featuring {personName}
+                There are {results.length} movie
+                {results.length !== 1 ? "s" : ""} featuring {personName}
               </p>
             </div>
           )}
