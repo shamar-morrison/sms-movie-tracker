@@ -45,6 +45,37 @@ export default function MovieCollection({
     }
   }, [userMovies])
 
+  // Add user ratings to movies after they're fetched
+  useEffect(() => {
+    if (movies.length > 0 && userMovies && Array.isArray(userMovies)) {
+      const userRatingsMap = new Map<number, number>()
+      userMovies.forEach((movie: any) => {
+        if (movie.movieId && movie.userRating) {
+          userRatingsMap.set(movie.movieId, movie.userRating)
+        }
+      })
+
+      const updatedMovies = movies.map((movie) => {
+        if (userRatingsMap.has(movie.id)) {
+          return {
+            ...movie,
+            user_rating: userRatingsMap.get(movie.id),
+          }
+        }
+        return movie
+      })
+
+      // Only update if there's any difference
+      if (
+        updatedMovies.some(
+          (movie, index) => movie.user_rating !== movies[index].user_rating,
+        )
+      ) {
+        setMovies(updatedMovies)
+      }
+    }
+  }, [movies, userMovies])
+
   useEffect(() => {
     let isMounted = true
 
@@ -156,18 +187,17 @@ export default function MovieCollection({
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                 />
-                {(type as "collection" | "discover") === "collection" &&
-                  movie.user_rating && (
-                    <div className="absolute top-2 right-2 z-20">
-                      <Badge
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
-                        <Star className="h-3 w-3 fill-primary text-primary" />
-                        <span>{movie.user_rating}/10</span>
-                      </Badge>
-                    </div>
-                  )}
+                {movie.user_rating && (
+                  <div className="absolute top-2 right-2 z-20">
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      <Star className="h-3 w-3 fill-primary text-primary" />
+                      <span>{movie.user_rating}/10</span>
+                    </Badge>
+                  </div>
+                )}
               </div>
               <div className="p-4">
                 <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
@@ -328,18 +358,14 @@ export default function MovieCollection({
               fill
               className="object-cover transition-transform group-hover:scale-105"
             />
-            {(type as "collection" | "discover") === "collection" &&
-              movie.user_rating && (
-                <div className="absolute top-2 right-2 z-20">
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1"
-                  >
-                    <Star className="h-3 w-3 fill-primary text-primary" />
-                    <span>{movie.user_rating}/10</span>
-                  </Badge>
-                </div>
-              )}
+            {movie.user_rating && (
+              <div className="absolute top-2 right-2 z-20">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-primary text-primary" />
+                  <span>{movie.user_rating}/10</span>
+                </Badge>
+              </div>
+            )}
           </div>
           <div className="p-4">
             <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
