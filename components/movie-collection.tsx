@@ -4,15 +4,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
 import { discoverMovies, getDiscoverMovies, TMDBMovie } from "@/lib/tmdb"
-import { showAuthToast } from "@/lib/utils"
 import { SignInButton, useAuth } from "@clerk/nextjs"
-import { useConvexAuth, useMutation, useQuery } from "convex/react"
+import { useConvexAuth, useQuery } from "convex/react"
 import { Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import CollectionButton from "./collection-button"
 
 export default function MovieCollection({
   type,
@@ -33,9 +32,6 @@ export default function MovieCollection({
   const [moviesInCollection, setMoviesInCollection] = useState<Set<number>>(
     new Set(),
   )
-
-  const addMovie = useMutation(api.movies.addMovieToCollection)
-  const removeMovie = useMutation(api.movies.removeMovieFromCollection)
 
   const userMovies = useQuery(api.movies.getUserMovies)
 
@@ -129,99 +125,6 @@ export default function MovieCollection({
   // consider both the loading state and the Convex query loading state
   const isCollectionLoading =
     type === "collection" && (loading || isUserMoviesLoading)
-
-  const handleAddToCollection = async (
-    movie: TMDBMovie,
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
-    e.preventDefault() // Prevent navigating to movie details
-    e.stopPropagation()
-
-    if (!isSignedIn) {
-      showAuthToast()
-      return
-    }
-
-    // Optimistically update UI
-    setMoviesInCollection((prev) => {
-      const newSet = new Set(prev)
-      newSet.add(movie.id)
-      return newSet
-    })
-
-    try {
-      // Convert null poster_path to undefined for Convex mutation
-      const convexMovie = {
-        id: movie.id,
-        title: movie.title,
-        poster_path: movie.poster_path || undefined,
-        release_date: movie.release_date,
-        vote_average: movie.vote_average,
-        genres: movie.genres,
-        overview: movie.overview,
-      }
-
-      await addMovie({ movie: convexMovie })
-
-      toast.success("Added to your collection", {
-        description: `${movie.title} has been added to your collection`,
-      })
-    } catch (error) {
-      // Revert optimistic update on error
-      setMoviesInCollection((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(movie.id)
-        return newSet
-      })
-
-      console.error("Error adding movie to collection:", error)
-      toast.error("Failed to add movie", {
-        description: "There was an error adding the movie to your collection",
-      })
-    }
-  }
-
-  const handleRemoveFromCollection = async (
-    movieId: number,
-    movieTitle: string,
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
-    e.preventDefault() // Prevent navigating to movie details
-    e.stopPropagation()
-
-    // Optimistically update UI
-    setMoviesInCollection((prev) => {
-      const newSet = new Set(prev)
-      newSet.delete(movieId)
-      return newSet
-    })
-
-    try {
-      await removeMovie({ movieId })
-
-      toast.success("Removed from your collection", {
-        description: `${movieTitle} has been removed from your collection`,
-      })
-
-      // Remove from current view if we're on the collection page
-      if (type === "collection") {
-        setMovies((prev) => prev.filter((m) => m.id !== movieId))
-      }
-    } catch (error) {
-      // Revert optimistic update on error
-      setMoviesInCollection((prev) => {
-        const newSet = new Set(prev)
-        newSet.add(movieId)
-        return newSet
-      })
-
-      console.error("Error removing movie from collection:", error)
-      toast.error("Failed to remove movie", {
-        description:
-          "There was an error removing the movie from your collection",
-      })
-    }
-  }
 
   // 1. FIRST - Show loading UI for all cases where data is loading
   // This should take precedence over authentication checks
@@ -463,42 +366,17 @@ export default function MovieCollection({
                 </Badge>
               ))}
             </div>
-            {isSignedIn ? (
-              moviesInCollection.has(movie.id) ? (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="mt-3 w-full z-20 relative"
-                  onClick={(e) =>
-                    handleRemoveFromCollection(movie.id, movie.title, e)
-                  }
-                >
-                  Remove from Collection
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="mt-3 w-full z-20 relative"
-                  onClick={(e) => handleAddToCollection(movie, e)}
-                >
-                  Add to Collection
-                </Button>
-              )
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="mt-3 w-full z-20 relative"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  showAuthToast()
-                }}
-              >
-                Add to Collection
-              </Button>
-            )}
+            <CollectionButton
+              movieId={movie.id}
+              movieTitle={movie.title}
+              movieDetails={{
+                poster_path: movie.poster_path,
+                release_date: movie.release_date,
+                vote_average: movie.vote_average,
+                genres: movie.genres,
+                overview: movie.overview,
+              }}
+            />
           </div>
         </div>
       ))}

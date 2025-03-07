@@ -1,21 +1,74 @@
+"use client"
+
+import CollectionButton from "@/components/collection-button"
 import MovieRating from "@/components/movie-rating"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getMovieById } from "@/lib/tmdb"
+import { getMovieById, TMDBMovie } from "@/lib/tmdb"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { ArrowLeft } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
-export default async function MoviePage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const movie = await getMovieById(params.id)
+interface MovieCast {
+  id: number
+  name: string
+  character: string
+  profile_path: string | null
+  known_for_department: string
+  order: number
+}
+
+interface MovieCrew {
+  id: number
+  name: string
+  job: string
+  department: string
+  profile_path: string | null
+}
+
+interface ProductionCompany {
+  id: number
+  name: string
+  logo_path: string | null
+  origin_country: string
+}
+
+interface Genre {
+  id: number
+  name: string
+}
+
+export default function MoviePage({ params }: { params: { id: string } }) {
+  const [movie, setMovie] = useState<TMDBMovie | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadMovie() {
+      try {
+        const movieData = await getMovieById(params.id)
+        setMovie(movieData)
+      } catch (error) {
+        console.error("Error loading movie:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadMovie()
+  }, [params.id])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">Loading movie details...</div>
+      </div>
+    )
+  }
 
   if (!movie) {
     return <div className="container py-10">Movie not found</div>
@@ -62,8 +115,20 @@ export default async function MoviePage({
                   className="object-cover"
                 />
               </div>
-              <div className="mt-6 space-y-4">
-                <Button className="w-full">Add to Collection</Button>
+              <div className="mt-1">
+                <CollectionButton
+                  movieId={movie.id}
+                  movieTitle={movie.title}
+                  movieDetails={{
+                    poster_path: movie.poster_path,
+                    release_date: movie.release_date,
+                    vote_average: movie.vote_average,
+                    genres: movie.genres,
+                    overview: movie.overview,
+                  }}
+                  size="default"
+                  variant="default"
+                />
               </div>
             </div>
           </div>
@@ -105,7 +170,7 @@ export default async function MoviePage({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {movie.genres.map((genre) => (
+              {movie.genres.map((genre: Genre) => (
                 <Badge key={genre.id} variant="secondary">
                   {genre.name}
                 </Badge>
@@ -113,7 +178,19 @@ export default async function MoviePage({
             </div>
 
             <div className="flex md:hidden gap-2">
-              <Button className="flex-1">Add to Collection</Button>
+              <CollectionButton
+                movieId={movie.id}
+                movieTitle={movie.title}
+                movieDetails={{
+                  poster_path: movie.poster_path,
+                  release_date: movie.release_date,
+                  vote_average: movie.vote_average,
+                  genres: movie.genres,
+                  overview: movie.overview,
+                }}
+                className="flex-1"
+                variant="default"
+              />
             </div>
 
             <div className="space-y-4">
@@ -168,7 +245,7 @@ export default async function MoviePage({
                 </p>
                 {movie.credits?.cast && movie.credits.cast.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {movie.credits.cast.slice(0, 8).map((person) => (
+                    {movie.credits.cast.slice(0, 8).map((person: MovieCast) => (
                       <div key={person.id} className="space-y-2">
                         <Link
                           href={`/search?tab=movie&personId=${person.id}&personName=${encodeURIComponent(person.name)}`}
@@ -211,7 +288,7 @@ export default async function MoviePage({
                 </p>
                 {movie.credits?.crew && movie.credits.crew.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {movie.credits.crew.slice(0, 8).map((person) => (
+                    {movie.credits.crew.slice(0, 8).map((person: MovieCrew) => (
                       <div
                         key={`${person.id}-${person.job}`}
                         className="flex items-center gap-4"
@@ -267,7 +344,7 @@ export default async function MoviePage({
                       <div className="font-medium">Production Companies</div>
                       <div className="text-muted-foreground">
                         {movie.production_companies
-                          .map((company) => company.name)
+                          .map((company: ProductionCompany) => company.name)
                           .join(", ")}
                       </div>
                     </div>
