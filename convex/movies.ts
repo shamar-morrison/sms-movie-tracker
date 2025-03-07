@@ -110,7 +110,6 @@ export const removeMovieFromCollection = mutation({
 
     const userId = identity.subject
 
-    // Find the movie in the collection
     const movies = await ctx.db
       .query("movieCollection")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -121,7 +120,6 @@ export const removeMovieFromCollection = mutation({
       throw new Error("Movie not in collection")
     }
 
-    // Remove the movie
     await ctx.db.delete(movies[0]._id)
 
     return { success: true }
