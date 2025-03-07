@@ -3,6 +3,7 @@ import { Providers } from "@/components/providers"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { Metadata } from "next"
 import localFont from "next/font/local"
+import NextTopLoader from "nextjs-toploader"
 import "./globals.css"
 
 const geistSans = localFont({
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <NextTopLoader color="#3b82f6" showSpinner={false} />
         <Providers>
           <ThemeProvider
             attribute="class"

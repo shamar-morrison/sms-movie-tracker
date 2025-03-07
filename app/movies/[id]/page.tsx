@@ -2,6 +2,7 @@
 
 import CollectionButton from "@/components/collection-button"
 import MovieRating from "@/components/movie-rating"
+import MovieTrailer from "@/components/movie-trailer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -68,6 +69,28 @@ export default function MoviePage({ params }: { params: { id: string } }) {
     loadMovie()
   }, [params.id])
 
+  // Find a YouTube trailer from videos
+  const getYoutubeTrailer = (movie: TMDBMovie) => {
+    if (!movie.videos || !movie.videos.results.length) return null
+
+    // First try to find an official trailer
+    const trailer = movie.videos.results.find(
+      (video) =>
+        video.site === "YouTube" &&
+        video.type === "Trailer" &&
+        video.name.toLowerCase().includes("official"),
+    )
+
+    // If no official trailer, try any trailer
+    if (!trailer) {
+      return movie.videos.results.find(
+        (video) => video.site === "YouTube" && video.type === "Trailer",
+      )
+    }
+
+    return trailer
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -83,6 +106,8 @@ export default function MoviePage({ params }: { params: { id: string } }) {
   if (userMovie && userMovie.userRating) {
     movie.user_rating = userMovie.userRating
   }
+
+  const trailer = getYoutubeTrailer(movie)
 
   return (
     <div className="min-h-screen bg-background pb-9">
@@ -139,6 +164,10 @@ export default function MoviePage({ params }: { params: { id: string } }) {
                   size="default"
                   variant="default"
                 />
+
+                {trailer && (
+                  <MovieTrailer name={trailer.name} youtubeKey={trailer.key} />
+                )}
               </div>
             </div>
           </div>
@@ -201,6 +230,10 @@ export default function MoviePage({ params }: { params: { id: string } }) {
                 className="flex-1"
                 variant="default"
               />
+
+              {trailer && (
+                <MovieTrailer name={trailer.name} youtubeKey={trailer.key} />
+              )}
             </div>
 
             <div className="space-y-4">

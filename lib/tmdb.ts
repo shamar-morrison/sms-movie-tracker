@@ -43,6 +43,16 @@ export interface TMDBMovie {
       profile_path: string | null
     }[]
   }
+  videos?: {
+    results: {
+      id: string
+      key: string
+      name: string
+      site: string
+      size: number
+      type: string
+    }[]
+  }
   // Additional field for user's personal rating
   user_rating?: number | null
 }
@@ -84,10 +94,9 @@ async function fetchFromTMDB(
 // Get a movie by ID
 export async function getMovieById(id: string): Promise<TMDBMovie | null> {
   try {
-    const data = await fetchFromTMDB(`/movie/${id}`, {
-      append_to_response: "credits",
+    return await fetchFromTMDB(`/movie/${id}`, {
+      append_to_response: "credits,videos",
     })
-    return data
   } catch (error) {
     console.error("Error fetching movie:", error)
     return null
@@ -105,12 +114,6 @@ export async function getDiscoverMovies(): Promise<TMDBMovie[]> {
     console.error("Error discovering movies:", error)
     return []
   }
-}
-
-// Get a user's rating for a specific movie
-export async function getUserRating(movieId: string): Promise<number | null> {
-  // For now, we'll just return null
-  return null
 }
 
 // Search movies by title
@@ -260,10 +263,29 @@ export async function getPersonById(
   personId: string,
 ): Promise<TMDBPerson | null> {
   try {
-    const data = await fetchFromTMDB(`/person/${personId}`)
-    return data
+    return await fetchFromTMDB(`/person/${personId}`)
   } catch (error) {
     console.error("Error fetching person details:", error)
     return null
+  }
+}
+
+// Get movie videos (trailers, teasers, etc.)
+export async function getMovieVideos(id: string): Promise<
+  {
+    id: string
+    key: string
+    name: string
+    site: string
+    size: number
+    type: string
+  }[]
+> {
+  try {
+    const data = await fetchFromTMDB(`/movie/${id}/videos`)
+    return data.results
+  } catch (error) {
+    console.error("Error fetching movie videos:", error)
+    return []
   }
 }
