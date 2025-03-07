@@ -255,7 +255,7 @@ export default function SearchTabs() {
           onSearch={searchMoviesByGenre}
         />
 
-        {genreSearchPerformed && genreResults.length > 0 && (
+        {genreSearchPerformed && genreResults.length > 0 && !isSearching && (
           <LoadMoreButton
             onClick={loadMoreGenreResults}
             isLoading={isLoadingMore}
