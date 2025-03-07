@@ -1,25 +1,112 @@
+"use client"
+
+import CollectionButton from "@/components/collection-button"
 import MovieRating from "@/components/movie-rating"
+import MovieTrailer from "@/components/movie-trailer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getMovieById } from "@/lib/tmdb"
+import { api } from "@/convex/_generated/api"
+import { getMovieById, TMDBMovie } from "@/lib/tmdb"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { useQuery } from "convex/react"
 import { ArrowLeft } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
-export default async function MoviePage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const movie = await getMovieById(params.id)
+interface MovieCast {
+  id: number
+  name: string
+  character: string
+  profile_path: string | null
+  known_for_department: string
+  order: number
+}
+
+interface MovieCrew {
+  id: number
+  name: string
+  job: string
+  department: string
+  profile_path: string | null
+}
+
+interface ProductionCompany {
+  id: number
+  name: string
+  logo_path: string | null
+  origin_country: string
+}
+
+interface Genre {
+  id: number
+  name: string
+}
+
+export default function MoviePage({ params }: { params: { id: string } }) {
+  const [movie, setMovie] = useState<TMDBMovie | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const userMovie = useQuery(api.movies.getUserMovie, {
+    movieId: parseInt(params.id, 10),
+  })
+
+  useEffect(() => {
+    async function loadMovie() {
+      try {
+        const movieData = await getMovieById(params.id)
+        setMovie(movieData)
+      } catch (error) {
+        console.error("Error loading movie:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadMovie()
+  }, [params.id])
+
+  const getYoutubeTrailer = (movie: TMDBMovie) => {
+    if (!movie.videos || !movie.videos.results.length) return null
+
+    // try to find an official trailer
+    const trailer = movie.videos.results.find(
+      (video) =>
+        video.site === "YouTube" &&
+        video.type === "Trailer" &&
+        video.name.toLowerCase().includes("official"),
+    )
+
+    // If no official trailer, try any trailer
+    if (!trailer) {
+      return movie.videos.results.find(
+        (video) => video.site === "YouTube" && video.type === "Trailer",
+      )
+    }
+
+    return trailer
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">Loading movie details...</div>
+      </div>
+    )
+  }
 
   if (!movie) {
     return <div className="container py-10">Movie not found</div>
   }
+
+  if (userMovie && userMovie.userRating) {
+    movie.user_rating = userMovie.userRating
+  }
+
+  const trailer = getYoutubeTrailer(movie)
 
   return (
     <div className="min-h-screen bg-background pb-9">
@@ -29,7 +116,7 @@ export default async function MoviePage({
           src={
             movie.backdrop_path
               ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-              : "/placeholder.svg?height=500&width=1000"
+              : "/placeholder-backdrop.svg"
           }
           alt={movie.title}
           fill
@@ -55,7 +142,7 @@ export default async function MoviePage({
                   src={
                     movie.poster_path
                       ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                      : "/placeholder.svg?height=450&width=300"
+                      : "/placeholder-movie.svg"
                   }
                   alt={movie.title}
                   fill
@@ -63,10 +150,23 @@ export default async function MoviePage({
                 />
               </div>
               <div className="mt-6 space-y-4">
-                <Button className="w-full">Add to Collection</Button>
-                <Button variant="outline" className="w-full">
-                  Add to Watchlist
-                </Button>
+                <CollectionButton
+                  movieId={movie.id}
+                  movieTitle={movie.title}
+                  movieDetails={{
+                    poster_path: movie.poster_path,
+                    release_date: movie.release_date,
+                    vote_average: movie.vote_average,
+                    genres: movie.genres,
+                    overview: movie.overview,
+                  }}
+                  size="default"
+                  variant="default"
+                />
+
+                {trailer && (
+                  <MovieTrailer name={trailer.name} youtubeKey={trailer.key} />
+                )}
               </div>
             </div>
           </div>
@@ -77,7 +177,7 @@ export default async function MoviePage({
                   src={
                     movie.poster_path
                       ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                      : "/placeholder.svg?height=450&width=300"
+                      : "/placeholder-movie.svg"
                   }
                   alt={movie.title}
                   fill
@@ -108,7 +208,7 @@ export default async function MoviePage({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {movie.genres.map((genre) => (
+              {movie.genres.map((genre: Genre) => (
                 <Badge key={genre.id} variant="secondary">
                   {genre.name}
                 </Badge>
@@ -116,10 +216,23 @@ export default async function MoviePage({
             </div>
 
             <div className="flex md:hidden gap-2">
-              <Button className="flex-1">Add to Collection</Button>
-              <Button variant="outline" className="flex-1">
-                Add to Watchlist
-              </Button>
+              <CollectionButton
+                movieId={movie.id}
+                movieTitle={movie.title}
+                movieDetails={{
+                  poster_path: movie.poster_path,
+                  release_date: movie.release_date,
+                  vote_average: movie.vote_average,
+                  genres: movie.genres,
+                  overview: movie.overview,
+                }}
+                className="flex-1"
+                variant="default"
+              />
+
+              {trailer && (
+                <MovieTrailer name={trailer.name} youtubeKey={trailer.key} />
+              )}
             </div>
 
             <div className="space-y-4">
@@ -158,7 +271,17 @@ export default async function MoviePage({
               </Card>
             </div>
 
-            <MovieRating movieId={movie.id.toString()} />
+            <MovieRating
+              movieId={movie.id.toString()}
+              movieDetails={{
+                title: movie.title,
+                poster_path: movie.poster_path,
+                release_date: movie.release_date,
+                vote_average: movie.vote_average,
+                genres: movie.genres,
+                overview: movie.overview,
+              }}
+            />
 
             <Separator />
 
@@ -174,7 +297,7 @@ export default async function MoviePage({
                 </p>
                 {movie.credits?.cast && movie.credits.cast.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {movie.credits.cast.slice(0, 8).map((person) => (
+                    {movie.credits.cast.slice(0, 8).map((person: MovieCast) => (
                       <div key={person.id} className="space-y-2">
                         <Link
                           href={`/search?tab=movie&personId=${person.id}&personName=${encodeURIComponent(person.name)}`}
@@ -217,7 +340,7 @@ export default async function MoviePage({
                 </p>
                 {movie.credits?.crew && movie.credits.crew.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {movie.credits.crew.slice(0, 8).map((person) => (
+                    {movie.credits.crew.slice(0, 8).map((person: MovieCrew) => (
                       <div
                         key={`${person.id}-${person.job}`}
                         className="flex items-center gap-4"
@@ -273,7 +396,7 @@ export default async function MoviePage({
                       <div className="font-medium">Production Companies</div>
                       <div className="text-muted-foreground">
                         {movie.production_companies
-                          .map((company) => company.name)
+                          .map((company: ProductionCompany) => company.name)
                           .join(", ")}
                       </div>
                     </div>

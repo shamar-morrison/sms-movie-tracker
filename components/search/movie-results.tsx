@@ -1,7 +1,11 @@
-import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { api } from "@/convex/_generated/api"
+import { useQuery } from "convex/react"
 import { Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useEffect, useState } from "react"
+import CollectionButton from "../collection-button"
 
 interface MovieResultsProps {
   results: any[]
@@ -12,6 +16,25 @@ export default function MovieResults({
   results,
   showEmptyMessage = false,
 }: MovieResultsProps) {
+  const [movieRatings, setMovieRatings] = useState<
+    Record<number, number | null>
+  >({})
+
+  const userMovies = useQuery(api.movies.getUserMovies)
+
+  // Extract user ratings for all movies when userMovies changes
+  useEffect(() => {
+    if (userMovies && Array.isArray(userMovies)) {
+      const ratings: Record<number, number | null> = {}
+      userMovies.forEach((movie: any) => {
+        if (movie.movieId && movie.userRating) {
+          ratings[movie.movieId] = movie.userRating
+        }
+      })
+      setMovieRatings(ratings)
+    }
+  }, [userMovies])
+
   if (results.length === 0) {
     return showEmptyMessage ? (
       <div className="text-center py-8 text-muted-foreground">
@@ -41,25 +64,42 @@ export default function MovieResults({
               fill
               className="object-cover transition-transform group-hover:scale-105"
             />
+            {/* Display user rating if available */}
+            {movieRatings[movie.id] && (
+              <div className="absolute top-2 right-2 z-20">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-primary text-primary" />
+                  <span>{movieRatings[movie.id]}/10</span>
+                </Badge>
+              </div>
+            )}
           </div>
           <div className="p-4">
             <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
             <div className="flex items-center justify-between mt-1">
               <div className="text-sm text-muted-foreground">
-                {new Date(movie.release_date).getFullYear()}
+                {movie.release_date
+                  ? new Date(movie.release_date).getFullYear()
+                  : "N/A"}
               </div>
               <div className="flex items-center gap-1">
                 <Star className="h-3 w-3 fill-primary text-primary" />
-                <span className="text-sm">{movie.vote_average.toFixed(1)}</span>
+                <span className="text-sm">
+                  {movie.vote_average?.toFixed(1) || "N/A"}
+                </span>
               </div>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="mt-3 w-full z-20 relative"
-            >
-              Add to Collection
-            </Button>
+            <CollectionButton
+              movieId={movie.id}
+              movieTitle={movie.title}
+              movieDetails={{
+                poster_path: movie.poster_path,
+                release_date: movie.release_date,
+                vote_average: movie.vote_average,
+                genres: movie.genres,
+                overview: movie.overview,
+              }}
+            />
           </div>
         </div>
       ))}

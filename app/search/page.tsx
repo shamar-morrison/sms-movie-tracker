@@ -1,5 +1,4 @@
 import SearchTabs from "@/components/search-tabs"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { ArrowLeft } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -19,7 +18,6 @@ export default function SearchPage() {
           </Link>
           <h1 className="text-3xl font-bold">Search</h1>
         </div>
-        <ThemeToggle />
       </div>
       <SearchTabs />
     </div>
