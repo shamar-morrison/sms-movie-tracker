@@ -1,6 +1,10 @@
+import { Badge } from "@/components/ui/badge"
+import { api } from "@/convex/_generated/api"
+import { useQuery } from "convex/react"
 import { Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import CollectionButton from "../collection-button"
 
 interface MovieResultsProps {
@@ -12,6 +16,25 @@ export default function MovieResults({
   results,
   showEmptyMessage = false,
 }: MovieResultsProps) {
+  const [movieRatings, setMovieRatings] = useState<
+    Record<number, number | null>
+  >({})
+
+  const userMovies = useQuery(api.movies.getUserMovies)
+
+  // Extract user ratings for all movies when userMovies changes
+  useEffect(() => {
+    if (userMovies && Array.isArray(userMovies)) {
+      const ratings: Record<number, number | null> = {}
+      userMovies.forEach((movie: any) => {
+        if (movie.movieId && movie.userRating) {
+          ratings[movie.movieId] = movie.userRating
+        }
+      })
+      setMovieRatings(ratings)
+    }
+  }, [userMovies])
+
   if (results.length === 0) {
     return showEmptyMessage ? (
       <div className="text-center py-8 text-muted-foreground">
@@ -41,6 +64,15 @@ export default function MovieResults({
               fill
               className="object-cover transition-transform group-hover:scale-105"
             />
+            {/* Display user rating if available */}
+            {movieRatings[movie.id] && (
+              <div className="absolute top-2 right-2 z-20">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-primary text-primary" />
+                  <span>{movieRatings[movie.id]}/10</span>
+                </Badge>
+              </div>
+            )}
           </div>
           <div className="p-4">
             <h3 className="font-semibold line-clamp-1">{movie.title}</h3>

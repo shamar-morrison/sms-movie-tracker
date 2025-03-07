@@ -40,26 +40,27 @@ export default function CollectionButton({
   const { isSignedIn } = useAuth()
   const [isInCollection, setIsInCollection] = useState<boolean | null>(null)
 
-  const userMovies = useQuery(api.movies.getUserMovies)
+  const userMovie = useQuery(api.movies.getUserMovie, { movieId })
 
   const addMovie = useMutation(api.movies.addMovieToCollection)
   const removeMovie = useMutation(api.movies.removeMovieFromCollection)
 
-  // Update isInCollection state when userMovies changes
+  // Update isInCollection state when userMovie changes
   useEffect(() => {
-    if (userMovies && Array.isArray(userMovies)) {
-      const movieIds = new Set(userMovies.map((movie: any) => movie.movieId))
-      setIsInCollection(movieIds.has(movieId))
+    if (userMovie) {
+      setIsInCollection(true)
+    } else {
+      setIsInCollection(false)
     }
-  }, [userMovies, movieId])
+  }, [userMovie])
 
-  // undefined means the query is still loading
-  const isLoading = userMovies === undefined
+  // Loading state - undefined means the query is still loading
+  const isLoading = userMovie === undefined && isSignedIn
 
   const handleAddToCollection = async (
     e: React.MouseEvent<HTMLButtonElement>,
   ) => {
-    e.preventDefault()
+    e.preventDefault() // Prevent navigating to movie details
     e.stopPropagation()
 
     if (!isSignedIn) {
@@ -100,9 +101,10 @@ export default function CollectionButton({
   const handleRemoveFromCollection = async (
     e: React.MouseEvent<HTMLButtonElement>,
   ) => {
-    e.preventDefault()
+    e.preventDefault() // Prevent navigating to movie details
     e.stopPropagation()
 
+    // Optimistically update UI
     setIsInCollection(false)
 
     try {
@@ -122,6 +124,7 @@ export default function CollectionButton({
     }
   }
 
+  // Handle not signed in case
   if (!isSignedIn) {
     return (
       <Button
@@ -139,6 +142,7 @@ export default function CollectionButton({
     )
   }
 
+  // Handle loading state
   if (isLoading) {
     return (
       <Button variant={variant} size={size} className={className} disabled>
@@ -147,6 +151,7 @@ export default function CollectionButton({
     )
   }
 
+  // Return the appropriate button based on collection status
   return isInCollection ? (
     <Button
       variant="destructive"

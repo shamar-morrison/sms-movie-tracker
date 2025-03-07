@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { api } from "@/convex/_generated/api"
 import { getMovieById, TMDBMovie } from "@/lib/tmdb"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { useQuery } from "convex/react"
 import { ArrowLeft } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -47,6 +49,10 @@ export default function MoviePage({ params }: { params: { id: string } }) {
   const [movie, setMovie] = useState<TMDBMovie | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const userMovie = useQuery(api.movies.getUserMovie, {
+    movieId: parseInt(params.id, 10),
+  })
+
   useEffect(() => {
     async function loadMovie() {
       try {
@@ -72,6 +78,10 @@ export default function MoviePage({ params }: { params: { id: string } }) {
 
   if (!movie) {
     return <div className="container py-10">Movie not found</div>
+  }
+
+  if (userMovie && userMovie.userRating) {
+    movie.user_rating = userMovie.userRating
   }
 
   return (
@@ -115,7 +125,7 @@ export default function MoviePage({ params }: { params: { id: string } }) {
                   className="object-cover"
                 />
               </div>
-              <div className="mt-1">
+              <div className="mt-6 space-y-4">
                 <CollectionButton
                   movieId={movie.id}
                   movieTitle={movie.title}
@@ -229,7 +239,17 @@ export default function MoviePage({ params }: { params: { id: string } }) {
               </Card>
             </div>
 
-            <MovieRating movieId={movie.id.toString()} />
+            <MovieRating
+              movieId={movie.id.toString()}
+              movieDetails={{
+                title: movie.title,
+                poster_path: movie.poster_path,
+                release_date: movie.release_date,
+                vote_average: movie.vote_average,
+                genres: movie.genres,
+                overview: movie.overview,
+              }}
+            />
 
             <Separator />
 
