@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { api } from "@/convex/_generated/api"
 import { discoverMovies, getDiscoverMovies, TMDBMovie } from "@/lib/tmdb"
 import { showAuthToast } from "@/lib/utils"
 import { SignInButton, useAuth } from "@clerk/nextjs"
@@ -12,7 +13,6 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { api } from "@/convex/_generated/api"
 
 export default function MovieCollection({
   type,
@@ -24,8 +24,11 @@ export default function MovieCollection({
   const [movies, setMovies] = useState<TMDBMovie[]>([])
   const [prevMovies, setPrevMovies] = useState<TMDBMovie[]>([]) // Keep previous movies to prevent flickering
   const [loading, setLoading] = useState(true)
-  const { isAuthenticated } = useConvexAuth()
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
+  const { isSignedIn, isLoaded: clerkLoaded } = useAuth()
+
+  // Add authReady state to track when all auth checks are complete
+  const authReady = clerkLoaded && !authLoading
 
   const [moviesInCollection, setMoviesInCollection] = useState<Set<number>>(
     new Set(),
@@ -210,9 +213,15 @@ export default function MovieCollection({
     }
   }
 
-  if (loading && type === "discover") {
-    // If we have previous movies, show them to prevent flickering
-    if (prevMovies.length > 0) {
+  // 1. FIRST - Show loading UI for all cases where data is loading
+  // This should take precedence over authentication checks
+  if (loading || !authReady) {
+    // Always show loading state with skeletons or previous content
+    if (
+      type === "discover" ||
+      (type === "collection" && prevMovies.length > 0)
+    ) {
+      // Show previous movies during loading (discover or collection with previous data)
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {prevMovies.map((movie) => (
@@ -272,38 +281,30 @@ export default function MovieCollection({
                     </Badge>
                   ))}
                 </div>
-                {isSignedIn ? (
-                  moviesInCollection.has(movie.id) ? (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="mt-3 w-full z-20 relative"
-                      onClick={(e) =>
-                        handleRemoveFromCollection(movie.id, movie.title, e)
-                      }
-                    >
-                      Remove from Collection
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="mt-3 w-full z-20 relative"
-                      onClick={(e) => handleAddToCollection(movie, e)}
-                    >
-                      Add to Collection
-                    </Button>
-                  )
+                {type === "collection" ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="mt-3 w-full z-20 relative"
+                    disabled={true}
+                  >
+                    Remove from Collection
+                  </Button>
+                ) : moviesInCollection.has(movie.id) ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="mt-3 w-full z-20 relative"
+                    disabled={true}
+                  >
+                    Remove from Collection
+                  </Button>
                 ) : (
                   <Button
                     variant="secondary"
                     size="sm"
                     className="mt-3 w-full z-20 relative"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      showAuthToast()
-                    }}
+                    disabled={true}
                   >
                     Add to Collection
                   </Button>
@@ -315,10 +316,11 @@ export default function MovieCollection({
       )
     }
 
-    // If no previous movies, show placeholder grid
+    // If no previous movies, show loading skeleton
+    const skeletonCount = type === "collection" ? 8 : 12
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {Array.from({ length: 12 }).map((_, index) => (
+        {Array.from({ length: skeletonCount }).map((_, index) => (
           <div
             key={index}
             className="relative overflow-hidden rounded-lg border bg-background animate-pulse"
@@ -342,17 +344,9 @@ export default function MovieCollection({
     )
   }
 
-  // Keep the collection loading state as is
-  if (loading && type === "collection") {
-    return (
-      <div className="text-center py-10">
-        <p className="text-xl text-gray-600">Loading your collection...</p>
-      </div>
-    )
-  }
-
+  // 2. SECOND - Authentication check (only once loading is complete)
   // Only show sign in message for collection route when not signed in
-  if (type === "collection" && !isSignedIn) {
+  if (type === "collection" && !isSignedIn && authReady) {
     return (
       <div className="text-center py-16">
         <h2 className="text-2xl font-bold mb-4">
@@ -368,8 +362,16 @@ export default function MovieCollection({
     )
   }
 
-  // Only show empty collection message when actually empty and not loading
-  if (movies.length === 0 && type === "collection" && isSignedIn && !loading) {
+  // 3. THIRD - Empty collection check (only after loading and auth are confirmed)
+  // Only show empty collection message when we're ABSOLUTELY CERTAIN the collection is empty
+  if (
+    !loading &&
+    authReady &&
+    isSignedIn &&
+    movies.length === 0 &&
+    type === "collection" &&
+    userMovies !== undefined
+  ) {
     return (
       <div className="text-center py-16">
         <h2 className="text-2xl font-bold mb-4">Your Collection is Empty</h2>
@@ -383,7 +385,8 @@ export default function MovieCollection({
     )
   }
 
-  if (movies.length === 0 && !loading) {
+  // 4. FOURTH - Generic empty state for non-collection views
+  if (movies.length === 0 && !loading && authReady) {
     return (
       <div className="text-center py-10">
         <p className="text-xl text-gray-600">
@@ -393,6 +396,7 @@ export default function MovieCollection({
     )
   }
 
+  // 5. FINALLY - Show the actual movie grid when everything is loaded properly
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {movies.map((movie) => (
