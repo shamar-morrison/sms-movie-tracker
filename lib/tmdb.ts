@@ -142,35 +142,53 @@ export async function searchPeople(query: string): Promise<TMDBPerson[]> {
   }
 }
 
-// Get movies by genre and year range
+// Get movies by genre and year range with additional filter parameters
 export async function discoverMovies(
-  genreId: string,
-  startYear: number,
-  endYear: number,
+  params: {
+    genreId?: string
+    yearFrom?: number
+    yearTo?: number
+    sortBy?: string
+    voteCountGte?: string
+  } = {},
 ): Promise<{
   results: TMDBMovie[]
   totalResults: number
   totalPages: number
 }> {
   try {
+    const {
+      genreId,
+      yearFrom = 1900,
+      yearTo = new Date().getFullYear(),
+      sortBy = "popularity.desc",
+      voteCountGte = "0",
+    } = params
+
+    // Prepare API parameters
+    const apiParams: Record<string, string> = {
+      sort_by: sortBy,
+      "vote_count.gte": voteCountGte,
+      "primary_release_date.gte": `${yearFrom}-01-01`,
+      "primary_release_date.lte": `${yearTo}-12-31`,
+      include_adult: "false",
+    }
+
+    // Only add genre filter if specified
+    if (genreId) {
+      apiParams.with_genres = genreId
+    }
+
     // First page
     const firstPageData = await fetchFromTMDB("/discover/movie", {
-      with_genres: genreId,
-      "release_date.gte": `${startYear}-01-01`,
-      "release_date.lte": `${endYear}-12-31`,
-      sort_by: "popularity.desc",
+      ...apiParams,
       page: "1",
-      include_adult: "false",
     })
 
     // For better results, we'll fetch the second page too
     const secondPageData = await fetchFromTMDB("/discover/movie", {
-      with_genres: genreId,
-      "release_date.gte": `${startYear}-01-01`,
-      "release_date.lte": `${endYear}-12-31`,
-      sort_by: "popularity.desc",
+      ...apiParams,
       page: "2",
-      include_adult: "false",
     })
 
     // Combine results from both pages
@@ -180,9 +198,7 @@ export async function discoverMovies(
     ]
 
     // Log the number of results and year range for debugging
-    console.log(
-      `Found ${combinedResults.length} movies for genre ${genreId} between ${startYear}-${endYear}`,
-    )
+    console.log(`Found ${combinedResults.length} movies with applied filters`)
     console.log(
       `Total results available: ${firstPageData.total_results}, Total pages: ${firstPageData.total_pages}`,
     )
@@ -216,26 +232,42 @@ export async function getMoviesByPerson(
 }
 
 /**
- * Discovers more movies by genre and year range for a specific page
+ * Discovers more movies by filters for a specific page
  */
-export async function loadMoreMoviesByGenre(
-  genreId: string,
-  fromYear: number,
-  toYear: number,
-  page: number,
-): Promise<TMDBMovie[]> {
+export async function loadMoreMoviesByGenre(params: {
+  genreId?: string
+  yearFrom?: number
+  yearTo?: number
+  sortBy?: string
+  voteCountGte?: string
+  page: number
+}): Promise<TMDBMovie[]> {
   try {
-    const fromDate = `${fromYear}-01-01`
-    const toDate = `${toYear}-12-31`
+    const {
+      genreId,
+      yearFrom = 1900,
+      yearTo = new Date().getFullYear(),
+      sortBy = "popularity.desc",
+      voteCountGte = "0",
+      page,
+    } = params
 
-    const response = await fetchFromTMDB("/discover/movie", {
-      with_genres: genreId,
-      "release_date.gte": fromDate,
-      "release_date.lte": toDate,
-      sort_by: "popularity.desc",
+    // Prepare API parameters
+    const apiParams: Record<string, string> = {
+      sort_by: sortBy,
+      "vote_count.gte": voteCountGte,
+      "primary_release_date.gte": `${yearFrom}-01-01`,
+      "primary_release_date.lte": `${yearTo}-12-31`,
       page: page.toString(),
       include_adult: "false",
-    })
+    }
+
+    // Only add genre filter if specified
+    if (genreId) {
+      apiParams.with_genres = genreId
+    }
+
+    const response = await fetchFromTMDB("/discover/movie", apiParams)
 
     if (!response.results) {
       console.error("No results found in API response:", response)
@@ -243,7 +275,7 @@ export async function loadMoreMoviesByGenre(
     }
 
     console.log(
-      `Found ${response.results.length} additional movies on page ${page} for genre ${genreId}`,
+      `Found ${response.results.length} additional movies on page ${page}`,
     )
     console.log(
       `Total results available: ${response.total_results}, Total pages: ${response.total_pages}`,

@@ -85,11 +85,12 @@ export default function SearchTabs() {
       console.log(
         `Searching for movies in genre ${genreId} with year range: ${yearRange[0]}-${yearRange[1]}`,
       )
-      const { results, totalResults, totalPages } = await discoverMovies(
+      // @ts-ignore - Using updated API with object parameters
+      const { results, totalResults, totalPages } = await discoverMovies({
         genreId,
-        yearRange[0],
-        yearRange[1],
-      )
+        yearFrom: yearRange[0],
+        yearTo: yearRange[1],
+      })
       setGenreResults(results)
       setTotalGenreResults(totalResults)
       setTotalGenrePages(totalPages)
@@ -110,12 +111,13 @@ export default function SearchTabs() {
     setIsLoadingMore(true)
 
     try {
-      const additionalMovies = await loadMoreMoviesByGenre(
-        selectedGenre,
-        yearRange[0],
-        yearRange[1],
-        currentGenrePage,
-      )
+      // @ts-ignore - Using updated API with object parameters
+      const additionalMovies = await loadMoreMoviesByGenre({
+        genreId: selectedGenre,
+        yearFrom: yearRange[0],
+        yearTo: yearRange[1],
+        page: currentGenrePage,
+      })
 
       setGenreResults((prev) => [...prev, ...additionalMovies])
       setCurrentGenrePage((prev) => prev + 1)
@@ -195,19 +197,24 @@ export default function SearchTabs() {
   }
 
   const loadMoviesByPerson = async (personId: string) => {
+    if (!personId) return
+
+    setIsSearching(true)
+
     try {
-      setIsSearching(true)
+      // Get person details including name
+      const person = await getPersonById(personId)
 
-      const movies = await getMoviesByPerson(personId)
-      setMovieResults(movies)
-      setMovieSearchPerformed(true)
+      if (person) {
+        setSelectedPersonName(person.name)
+        setSelectedPersonId(personId)
 
-      // Switch to movie tab if we're on a different tab
-      if (activeTab !== "movie") {
-        setActiveTab("movie")
+        const movies = await getMoviesByPerson(personId)
+        setMovieResults(movies)
       }
     } catch (error) {
-      console.error("Error loading movies for person:", error)
+      console.error("Error loading person movies:", error)
+      setMovieResults([])
     } finally {
       setIsSearching(false)
     }

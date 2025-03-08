@@ -1,12 +1,19 @@
 "use client"
 
+import { LoadMoreButton } from "@/components/search/load-more-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MovieSkeleton } from "@/components/ui/movie-skeleton"
 import { api } from "@/convex/_generated/api"
-import { discoverMovies, getDiscoverMovies, TMDBMovie } from "@/lib/tmdb"
+import {
+  discoverMovies,
+  getDiscoverMovies,
+  loadMoreMoviesByGenre,
+  TMDBMovie,
+} from "@/lib/tmdb"
 import { SignInButton, useAuth } from "@clerk/nextjs"
 import { useConvexAuth, useQuery } from "convex/react"
+import { AnimatePresence, motion } from "framer-motion"
 import { Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -14,25 +21,54 @@ import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import CollectionButton from "./collection-button"
 
+// Animation variants for the grid container
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      duration: 0.3,
+    },
+  },
+}
+
+// Animation variants for each movie card
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.3 },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.9,
+    transition: { duration: 0.2 },
+  },
+}
+
 export default function MovieCollection({
   type,
 }: {
   type: "collection" | "discover"
 }) {
   const searchParams = useSearchParams()
-  const genreIdParam = searchParams.get("genreId")
   const [movies, setMovies] = useState<TMDBMovie[]>([])
-  const [prevMovies, setPrevMovies] = useState<TMDBMovie[]>([]) // Keep previous movies to prevent flickering
+  const [prevMovies, setPrevMovies] = useState<TMDBMovie[]>([])
   const [loading, setLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [currentPage, setCurrentPage] = useState(3) // We start at 3 because we already load pages 1-2 in discoverMovies
+  const [totalResults, setTotalResults] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
   const { isSignedIn, isLoaded: clerkLoaded } = useAuth()
 
   // Add authReady state to track when all auth checks are complete
   const authReady = clerkLoaded && !authLoading
 
-  const [moviesInCollection, setMoviesInCollection] = useState<Set<number>>(
-    new Set(),
-  )
+  const [_, setMoviesInCollection] = useState<Set<number>>(new Set())
 
   const userMovies = useQuery(api.movies.getUserMovies)
 
@@ -66,7 +102,6 @@ export default function MovieCollection({
         return movie
       })
 
-      // Only update if there's any difference
       if (
         updatedMovies.some(
           (movie, index) => movie.user_rating !== movies[index].user_rating,
@@ -116,23 +151,47 @@ export default function MovieCollection({
               }),
             )
           }
-        } else if (type === "discover" && genreIdParam) {
-          const response = await discoverMovies(
-            genreIdParam,
-            1900,
-            new Date().getFullYear(),
-          )
+        } else if (type === "discover") {
+          // Get filter parameters from the URL
+          const sortBy = searchParams.get("sort_by") || "popularity.desc"
+          const genreId = searchParams.get("genreId") || undefined
+          const yearFrom = searchParams.get("year_from")
+            ? parseInt(searchParams.get("year_from")!)
+            : undefined
+          const yearTo = searchParams.get("year_to")
+            ? parseInt(searchParams.get("year_to")!)
+            : undefined
+          const voteCountGte = searchParams.get("vote_count.gte") || undefined
+
+          const response = await discoverMovies({
+            genreId,
+            yearFrom,
+            yearTo,
+            sortBy,
+            voteCountGte,
+          })
           result = response.results
+          setTotalResults(response.totalResults)
+          setTotalPages(response.totalPages)
+          setCurrentPage(3) // Reset pagination when filters change
         } else {
           result = await getDiscoverMovies()
         }
 
         if (isMounted) {
-          setMovies(result)
+          // Don't update state if no results returned, keep previous movies
+          if (result.length > 0) {
+            setMovies(result)
+          } else if (prevMovies.length > 0) {
+            setMovies(prevMovies) // Keep previous movies if new query returned no results
+          }
         }
       } catch (error) {
         console.error(`Error fetching ${type} movies:`, error)
-        if (isMounted) {
+        // On error, maintain previous movies if available
+        if (isMounted && prevMovies.length > 0) {
+          setMovies(prevMovies)
+        } else if (isMounted) {
           setMovies([])
         }
       } finally {
@@ -150,237 +209,222 @@ export default function MovieCollection({
     return () => {
       isMounted = false
     }
-  }, [type, genreIdParam, isAuthenticated, userMovies, isUserMoviesLoading])
+  }, [
+    type,
+    isAuthenticated,
+    userMovies,
+    isUserMoviesLoading,
+    searchParams.get("sort_by"),
+    searchParams.get("genreId"),
+    searchParams.get("year_from"),
+    searchParams.get("year_to"),
+    searchParams.get("vote_count.gte"),
+  ])
 
-  // consider both the loading state and the Convex query loading state
-  const isCollectionLoading =
-    type === "collection" && (loading || isUserMoviesLoading)
+  // Load more results handler for discover page
+  const handleLoadMore = async () => {
+    if (type !== "discover" || isLoadingMore) return
+
+    setIsLoadingMore(true)
+
+    try {
+      // Get filter parameters from the URL
+      const sortBy = searchParams.get("sort_by") || "popularity.desc"
+      const genreId = searchParams.get("genreId") || undefined
+      const yearFrom = searchParams.get("year_from")
+        ? parseInt(searchParams.get("year_from")!)
+        : undefined
+      const yearTo = searchParams.get("year_to")
+        ? parseInt(searchParams.get("year_to")!)
+        : undefined
+      const voteCountGte = searchParams.get("vote_count.gte") || undefined
+
+      const additionalMovies = await loadMoreMoviesByGenre({
+        genreId,
+        yearFrom,
+        yearTo,
+        sortBy,
+        voteCountGte,
+        page: currentPage,
+      })
+
+      if (additionalMovies.length > 0) {
+        setMovies([...movies, ...additionalMovies])
+        setCurrentPage(currentPage + 1)
+      }
+    } catch (error) {
+      console.error("Error loading more movies:", error)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
 
   // 1. FIRST - Show loading UI for all cases where data is loading
   // This should take precedence over authentication checks
-  if ((type === "discover" && loading) || isCollectionLoading || !authReady) {
-    if (
-      type === "discover" ||
-      (type === "collection" && prevMovies.length > 0)
-    ) {
-      // Show previous movies during loading (discover or collection with previous data)
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {prevMovies.map((movie) => (
-            <div
-              key={movie.id}
-              className="group relative overflow-hidden rounded-lg border bg-background"
-            >
-              <Link
-                href={`/movies/${movie.id}`}
-                className="absolute inset-0 z-10"
-              >
-                <span className="sr-only">View {movie.title}</span>
-              </Link>
-              <div className="relative aspect-[2/3] overflow-hidden">
-                <Image
-                  src={
-                    movie.poster_path
-                      ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                      : "/placeholder-movie.svg"
-                  }
-                  alt={movie.title}
-                  fill
-                  className="object-cover transition-transform group-hover:scale-105"
-                />
-                {movie.user_rating && (
-                  <div className="absolute top-2 right-2 z-20">
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      <Star className="h-3 w-3 fill-primary text-primary" />
-                      <span>{movie.user_rating}/10</span>
-                    </Badge>
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
-                <div className="flex items-center justify-between mt-1">
-                  <div className="text-sm text-muted-foreground">
-                    {movie.release_date
-                      ? new Date(movie.release_date).getFullYear()
-                      : "N/A"}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-primary text-primary" />
-                    <span className="text-sm">
-                      {movie.vote_average?.toFixed(1) || "N/A"}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {movie.genres?.slice(0, 2).map((genre: any) => (
-                    <Badge key={genre.id} variant="outline" className="text-xs">
-                      {genre.name}
-                    </Badge>
-                  ))}
-                </div>
-                {type === "collection" ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="mt-3 w-full z-20 relative"
-                    disabled={true}
-                  >
-                    Remove from Collection
-                  </Button>
-                ) : moviesInCollection.has(movie.id) ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="mt-3 w-full z-20 relative"
-                    disabled={true}
-                  >
-                    Remove from Collection
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mt-3 w-full z-20 relative"
-                    disabled={true}
-                  >
-                    Add to Collection
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )
-    }
+  const isInitialLoading =
+    type === "collection" && (loading || isUserMoviesLoading)
 
-    // If no previous movies, show loading skeleton
-    const skeletonCount = type === "collection" ? 8 : 12
-    return <MovieSkeleton count={skeletonCount} />
-  }
+  // 2. THEN - If not initial loading, check authentication states for collection view
+  // Only applicable to collection view
+  const needsAuthentication = type === "collection" && authReady && !isSignedIn
 
-  // 2. SECOND - Authentication check (only once loading is complete)
-  // Only show sign in message for collection route when not signed in
-  if (type === "collection" && !isSignedIn && authReady) {
-    return (
-      <div className="text-center py-16">
-        <h2 className="text-2xl font-bold mb-4">
-          Sign In to View Your Collection
-        </h2>
-        <p className="text-gray-600 mb-6">
-          You need to be signed in to view and manage your movie collection
-        </p>
-        <SignInButton>
-          <Button size="lg">Sign In</Button>
-        </SignInButton>
-      </div>
-    )
-  }
-
-  // 3. THIRD - Empty collection check (only after loading and auth are confirmed)
-  // Only show empty collection message when we're ABSOLUTELY CERTAIN the collection is empty
-  if (
-    !isCollectionLoading &&
-    authReady &&
-    isSignedIn &&
-    movies.length === 0 &&
+  // 3. THEN - If authenticated and data is loaded, but collection is empty
+  const hasEmptyCollection =
     type === "collection" &&
-    userMovies !== undefined
-  ) {
-    return (
-      <div className="text-center py-16">
-        <h2 className="text-2xl font-bold mb-4">Your Collection is Empty</h2>
-        <p className="text-gray-600 mb-6">
-          Start adding movies to build your collection
-        </p>
-        <Button asChild size="lg">
-          <Link href="/discover">Discover Movies</Link>
-        </Button>
-      </div>
-    )
-  }
+    !isInitialLoading &&
+    !needsAuthentication &&
+    movies.length === 0
 
-  // 4. FOURTH - Generic empty state for non-collection views
-  if (movies.length === 0 && !loading && authReady && type !== "collection") {
-    return (
-      <div className="text-center py-10">
-        <p className="text-xl text-gray-600">
-          No movies found. Please try again later.
-        </p>
-      </div>
-    )
-  }
+  // 4. THEN - If discover view and still loading
+  const isDiscoverLoading =
+    type === "discover" && loading && prevMovies.length === 0
 
-  // 5. FINALLY - Show the actual movie grid when everything is loaded properly
+  // Main content display - actual data
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {movies.map((movie) => (
-        <div
-          key={movie.id}
-          className="group relative overflow-hidden rounded-lg border bg-background"
-        >
-          <Link href={`/movies/${movie.id}`} className="absolute inset-0 z-10">
-            <span className="sr-only">View {movie.title}</span>
-          </Link>
-          <div className="relative aspect-[2/3] overflow-hidden">
-            <Image
-              src={
-                movie.poster_path
-                  ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                  : "/placeholder-movie.svg"
-              }
-              alt={movie.title}
-              fill
-              className="object-cover transition-transform group-hover:scale-105"
-            />
-            {movie.user_rating && (
-              <div className="absolute top-2 right-2 z-20">
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-primary text-primary" />
-                  <span>{movie.user_rating}/10</span>
-                </Badge>
-              </div>
-            )}
-          </div>
-          <div className="p-4">
-            <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
-            <div className="flex items-center justify-between mt-1">
-              <div className="text-sm text-muted-foreground">
-                {movie.release_date
-                  ? new Date(movie.release_date).getFullYear()
-                  : "N/A"}
-              </div>
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 fill-primary text-primary" />
-                <span className="text-sm">
-                  {movie.vote_average?.toFixed(1) || "N/A"}
-                </span>
-              </div>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {movie.genres?.slice(0, 2).map((genre: any) => (
-                <Badge key={genre.id} variant="outline" className="text-xs">
-                  {genre.name}
-                </Badge>
-              ))}
-            </div>
-            <CollectionButton
-              movieId={movie.id}
-              movieTitle={movie.title}
-              movieDetails={{
-                poster_path: movie.poster_path,
-                release_date: movie.release_date,
-                vote_average: movie.vote_average,
-                genres: movie.genres,
-                overview: movie.overview,
-              }}
-            />
-          </div>
-        </div>
-      ))}
+    <div className="space-y-8">
+      <AnimatePresence mode="wait">
+        {isInitialLoading ? (
+          <MovieSkeleton count={12} key="skeletons" />
+        ) : needsAuthentication ? (
+          <motion.div
+            className="rounded-xl border bg-card p-8 text-center"
+            key="auth-prompt"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-2xl font-bold mb-4">
+              Sign In to View Collection
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              You need to sign in to view and manage your movie collection
+            </p>
+            <SignInButton>
+              <Button>Sign In</Button>
+            </SignInButton>
+          </motion.div>
+        ) : hasEmptyCollection ? (
+          <motion.div
+            className="rounded-xl border bg-card p-8 text-center"
+            key="empty-collection"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-2xl font-bold mb-4">
+              Your Collection is Empty
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              Start exploring and adding movies to your collection
+            </p>
+            <Button asChild>
+              <Link href="/discover">Discover Movies</Link>
+            </Button>
+          </motion.div>
+        ) : isDiscoverLoading ? (
+          <MovieSkeleton count={12} key="discover-skeletons" />
+        ) : (
+          <motion.div
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+            key="movie-grid"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            layout
+          >
+            {movies.map((movie) => (
+              <motion.div
+                key={movie.id}
+                className="group relative overflow-hidden rounded-lg border bg-background"
+                variants={cardVariants}
+                layout
+                layoutId={`movie-${movie.id}`}
+              >
+                <Link
+                  href={`/movies/${movie.id}`}
+                  className="absolute inset-0 z-10"
+                >
+                  <span className="sr-only">View {movie.title}</span>
+                </Link>
+                <div className="relative aspect-[2/3] overflow-hidden">
+                  <Image
+                    src={
+                      movie.poster_path
+                        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                        : "/placeholder-movie.svg"
+                    }
+                    alt={movie.title}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                  />
+                  {movie.user_rating && (
+                    <div className="absolute top-2 right-2 z-20">
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        <Star className="h-3 w-3 fill-primary text-primary" />
+                        <span>{movie.user_rating}/10</span>
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold line-clamp-1">{movie.title}</h3>
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="text-sm text-muted-foreground">
+                      {movie.release_date
+                        ? new Date(movie.release_date).getFullYear()
+                        : "N/A"}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3 w-3 fill-primary text-primary" />
+                      <span className="text-sm">
+                        {movie.vote_average?.toFixed(1) || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {movie.genres?.slice(0, 2).map((genre: any) => (
+                      <Badge
+                        key={genre.id}
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        {genre.name}
+                      </Badge>
+                    ))}
+                  </div>
+                  <CollectionButton
+                    movieId={movie.id}
+                    movieTitle={movie.title}
+                    movieDetails={{
+                      poster_path: movie.poster_path,
+                      release_date: movie.release_date,
+                      vote_average: movie.vote_average,
+                      genres: movie.genres,
+                      overview: movie.overview,
+                    }}
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {type === "discover" && totalPages > 2 && (
+        <LoadMoreButton
+          onClick={handleLoadMore}
+          isLoading={isLoadingMore}
+          hasMoreResults={currentPage <= totalPages}
+          totalResults={totalResults}
+          loadedResults={movies.length}
+        />
+      )}
     </div>
   )
 }
