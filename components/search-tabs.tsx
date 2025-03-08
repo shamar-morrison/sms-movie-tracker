@@ -11,17 +11,18 @@ import {
   getMoviesByPerson,
   getPersonById,
   loadMoreMoviesByGenre,
-  searchPeople,
   searchMoviesByTitle as tmdbSearchMovies,
+  searchPeople,
 } from "@/lib/tmdb"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 
 export default function SearchTabs() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab") || "movie"
   const [activeTab, setActiveTab] = useState(tabParam)
   const router = useRouter()
+  const initialSearchPerformedRef = React.useRef(false)
 
   // Get personId and personName from URL if available
   const personIdParam = searchParams.get("personId")
@@ -29,7 +30,9 @@ export default function SearchTabs() {
 
   // Update activeTab when URL parameters change (browser navigation)
   useEffect(() => {
-    setActiveTab(tabParam)
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
   }, [tabParam])
 
   // Load person movies if personId is in URL
@@ -41,6 +44,61 @@ export default function SearchTabs() {
       setActiveTab("movie")
     }
   }, [personIdParam, personNameParam])
+
+  // Load genre search results if genreId is in URL
+  useEffect(() => {
+    // Skip if we've already performed the initial search
+    if (initialSearchPerformedRef.current) {
+      return
+    }
+
+    const genreIdParam = searchParams.get("genreId")
+    const yearFromParam = searchParams.get("yearFrom")
+    const yearToParam = searchParams.get("yearTo")
+
+    if (genreIdParam && yearFromParam && yearToParam && tabParam === "genre") {
+      initialSearchPerformedRef.current = true
+
+      const yearFromInt = parseInt(yearFromParam)
+      const yearToInt = parseInt(yearToParam)
+
+      // Set all state at once to minimize re-renders
+      setSelectedGenre(genreIdParam)
+      setYearRange([yearFromInt, yearToInt])
+      setIsSearching(true)
+      setGenreSearchPerformed(true)
+
+      discoverMovies({
+        genreId: genreIdParam,
+        yearFrom: yearFromInt,
+        yearTo: yearToInt,
+      })
+        .then(({ results, totalResults, totalPages }) => {
+          setGenreResults(results)
+          setTotalGenreResults(totalResults)
+          setTotalGenrePages(totalPages)
+          setCurrentGenrePage(3)
+        })
+        .catch((error) => {
+          console.error("Error discovering movies:", error)
+          setGenreResults([])
+          setTotalGenreResults(0)
+          setTotalGenrePages(0)
+        })
+        .finally(() => {
+          setIsSearching(false)
+        })
+    }
+  }, [searchParams, tabParam])
+
+  // Reset search performed ref when tab changes
+  useEffect(() => {
+    initialSearchPerformedRef.current = false
+
+    return () => {
+      initialSearchPerformedRef.current = false
+    }
+  }, [activeTab])
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -79,6 +137,24 @@ export default function SearchTabs() {
   const searchMoviesByGenre = async (genreId: string) => {
     if (!genreId) return
 
+    // Check if we're already searching with the same parameters from the URL
+    const genreIdParam = searchParams.get("genreId")
+    const yearFromParam = searchParams.get("yearFrom")
+    const yearToParam = searchParams.get("yearTo")
+
+    const sameParameters =
+      genreIdParam === genreId &&
+      yearFromParam === yearRange[0].toString() &&
+      yearToParam === yearRange[1].toString()
+
+    // If the search is already performed with the same parameters, don't repeat
+    if (initialSearchPerformedRef.current && sameParameters) {
+      return
+    }
+
+    // Mark that we've performed a search
+    initialSearchPerformedRef.current = true
+
     setIsSearching(true)
     setGenreSearchPerformed(true)
 
@@ -86,6 +162,11 @@ export default function SearchTabs() {
       console.log(
         `Searching for movies in genre ${genreId} with year range: ${yearRange[0]}-${yearRange[1]}`,
       )
+      router.push(
+        `/search?tab=genre&genreId=${genreId}&yearFrom=${yearRange[0]}&yearTo=${yearRange[1]}`,
+        { scroll: false },
+      )
+
       // @ts-ignore - Using updated API with object parameters
       const { results, totalResults, totalPages } = await discoverMovies({
         genreId,
@@ -107,16 +188,20 @@ export default function SearchTabs() {
   }
 
   const loadMoreGenreResults = async () => {
-    if (!selectedGenre || currentGenrePage > totalGenrePages) return
+    const genreIdParam = searchParams.get("genreId") || selectedGenre
+
+    if (!genreIdParam || currentGenrePage > totalGenrePages) return
 
     setIsLoadingMore(true)
 
     try {
       // @ts-ignore - Using updated API with object parameters
       const additionalMovies = await loadMoreMoviesByGenre({
-        genreId: selectedGenre,
-        yearFrom: yearRange[0],
-        yearTo: yearRange[1],
+        genreId: genreIdParam,
+        yearFrom: parseInt(
+          searchParams.get("yearFrom") || yearRange[0].toString(),
+        ),
+        yearTo: parseInt(searchParams.get("yearTo") || yearRange[1].toString()),
         page: currentGenrePage,
       })
 
