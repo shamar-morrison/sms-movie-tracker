@@ -11,8 +11,8 @@ import {
   getMoviesByPerson,
   getPersonById,
   loadMoreMoviesByGenre,
-  searchMoviesByTitle as tmdbSearchMovies,
   searchPeople,
+  searchMoviesByTitle as tmdbSearchMovies,
 } from "@/lib/tmdb"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -38,6 +38,7 @@ export default function SearchTabs() {
       setSelectedPersonId(personIdParam)
       setSelectedPersonName(personNameParam)
       loadMoviesByPerson(personIdParam)
+      setActiveTab("movie")
     }
   }, [personIdParam, personNameParam])
 
@@ -211,6 +212,7 @@ export default function SearchTabs() {
 
         const movies = await getMoviesByPerson(personId)
         setMovieResults(movies)
+        setMovieSearchPerformed(true)
       }
     } catch (error) {
       console.error("Error loading person movies:", error)
