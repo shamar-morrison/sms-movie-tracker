@@ -88,7 +88,6 @@ export default function DiscoverFilters() {
   const currentYearTo = searchParams.get("year_to") || currentYear.toString()
   const currentVoteCount = searchParams.get("vote_count.gte") || "0"
 
-  // Local state for advanced filter values
   const [yearFrom, setYearFrom] = useState(parseInt(currentYearFrom))
   const [yearTo, setYearTo] = useState(parseInt(currentYearTo))
   const [minVoteCount, setMinVoteCount] = useState(parseInt(currentVoteCount))
@@ -143,7 +142,6 @@ export default function DiscoverFilters() {
 
     router.push(`${pathname}?${params.toString()}`)
 
-    // Close the dialog after applying filters
     setDialogOpen(false)
     // Reset after a short delay to allow animation
     setTimeout(() => setIsUpdating(false), 300)
@@ -153,7 +151,6 @@ export default function DiscoverFilters() {
     setIsUpdating(true)
     router.push(pathname)
 
-    // Close the dialog after resetting filters
     setDialogOpen(false)
     // Reset after a short delay to allow animation
     setTimeout(() => setIsUpdating(false), 300)
@@ -163,7 +160,6 @@ export default function DiscoverFilters() {
     sortOptions.find((option) => option.value === currentSort)?.label ||
     "Sort By"
 
-  // Check if any advanced filters are applied
   const hasAdvancedFilters =
     currentYearFrom !== (currentYear - 10).toString() ||
     currentYearTo !== currentYear.toString() ||

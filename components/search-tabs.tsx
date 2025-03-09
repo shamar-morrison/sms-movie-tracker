@@ -152,7 +152,6 @@ export default function SearchTabs() {
       return
     }
 
-    // Mark that we've performed a search
     initialSearchPerformedRef.current = true
 
     setIsSearching(true)
