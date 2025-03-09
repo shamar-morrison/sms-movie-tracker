@@ -11,8 +11,8 @@ import {
   getMoviesByPerson,
   getPersonById,
   loadMoreMoviesByGenre,
-  searchPeople,
   searchMoviesByTitle as tmdbSearchMovies,
+  searchPeople,
 } from "@/lib/tmdb"
 import { useRouter, useSearchParams } from "next/navigation"
 import React, { useEffect, useState } from "react"
@@ -35,14 +35,58 @@ export default function SearchTabs() {
     }
   }, [tabParam])
 
-  // Load search query from URL if present
+  // Load search query from URL if present - but only on initial load
+  useEffect(() => {
+    const queryParam = searchParams.get("query")
+    if (
+      queryParam &&
+      tabParam === "movie" &&
+      !initialSearchPerformedRef.current
+    ) {
+      initialSearchPerformedRef.current = true
+      setMovieQuery(queryParam)
+
+      // Perform the search from URL params
+      setIsSearching(true)
+      setMovieSearchPerformed(true)
+
+      tmdbSearchMovies(queryParam)
+        .then((results) => {
+          setMovieResults(results)
+        })
+        .catch((error) => {
+          console.error("Error searching movies:", error)
+          setMovieResults([])
+        })
+        .finally(() => {
+          setIsSearching(false)
+        })
+    }
+  }, [])
+
   useEffect(() => {
     const queryParam = searchParams.get("query")
     if (queryParam && tabParam === "movie") {
       setMovieQuery(queryParam)
-      searchMoviesByTitle(queryParam)
+
+      if (initialSearchPerformedRef.current) {
+        setIsSearching(true)
+        setMovieSearchPerformed(true)
+
+        tmdbSearchMovies(queryParam)
+          .then((results) => {
+            setMovieResults(results)
+          })
+          .catch((error) => {
+            console.error("Error searching movies:", error)
+            setMovieResults([])
+          })
+          .finally(() => {
+            setIsSearching(false)
+          })
+      }
     }
-  }, [searchParams])
+  }, [searchParams, tabParam])
 
   // Load person movies if personId is in URL
   useEffect(() => {
@@ -229,6 +273,11 @@ export default function SearchTabs() {
     setMovieSearchPerformed(true)
 
     try {
+      // Update URL with search query
+      router.push(`/search?tab=movie&query=${encodeURIComponent(query)}`, {
+        scroll: false,
+      })
+
       const results = await tmdbSearchMovies(query)
       setMovieResults(results)
     } catch (error) {
