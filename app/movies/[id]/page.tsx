@@ -149,7 +149,7 @@ export default function MoviePage({ params }: { params: { id: string } }) {
                   className="object-cover"
                 />
               </div>
-              <div className="mt-2 space-y-4">
+              <div className="mt-2 space-y-2">
                 <CollectionButton
                   movieId={movie.id}
                   movieTitle={movie.title}
