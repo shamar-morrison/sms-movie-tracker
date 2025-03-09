@@ -113,10 +113,6 @@ export default function CollectionContent() {
           <Button asChild>
             <Link href="/discover">Discover Movies</Link>
           </Button>
-          <Button variant="outline" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
         </div>
       </motion.div>
     )
