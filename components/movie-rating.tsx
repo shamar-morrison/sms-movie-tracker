@@ -230,10 +230,18 @@ export default function MovieRating({
             ))}
           </div>
         </div>
-        {hasRated && !isEditing && (
+        {hasRated && !isEditing && movieDetails?.title && (
           <div className="mt-4 text-center">
             <div className="text-2xl font-bold">{userRating}/10</div>
-            <p className="text-sm text-muted-foreground">Your rating</p>
+            <p className="text-sm text-muted-foreground">
+              Your rating for{" "}
+              <span data-testid="movie-title">{movieDetails.title}</span>
+            </p>
+            {movieDetails.genres && movieDetails.genres.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {movieDetails.genres.map((g) => g.name).join(", ")}
+              </p>
+            )}
           </div>
         )}
       </CardContent>
