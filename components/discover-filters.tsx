@@ -23,20 +23,20 @@ import {
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { AnimatePresence, motion } from "framer-motion"
-import { ChevronDown, Filter, SlidersHorizontal } from "lucide-react"
+import { ChevronDown, Filter, SlidersHorizontal, Tag, X } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 // Available sort options in TMDB API
 const sortOptions = [
-  { value: "popularity.desc", label: "Popularity (Descending)" },
-  { value: "popularity.asc", label: "Popularity (Ascending)" },
-  { value: "vote_average.desc", label: "Rating (Descending)" },
-  { value: "vote_average.asc", label: "Rating (Ascending)" },
-  { value: "primary_release_date.desc", label: "Release Date (Descending)" },
-  { value: "primary_release_date.asc", label: "Release Date (Ascending)" },
-  { value: "revenue.desc", label: "Revenue (Descending)" },
-  { value: "revenue.asc", label: "Revenue (Ascending)" },
+  { value: "popularity.desc", label: "Most Popular First" },
+  { value: "popularity.asc", label: "Least Popular First" },
+  { value: "vote_average.desc", label: "Highest Rated First" },
+  { value: "vote_average.asc", label: "Lowest Rated First" },
+  { value: "primary_release_date.desc", label: "Latest Release First" },
+  { value: "primary_release_date.asc", label: "Oldest Release First" },
+  { value: "revenue.desc", label: "Highest Grossing First" },
+  { value: "revenue.asc", label: "Lowest Grossing First" },
 ]
 
 // Popular genres in TMDB
@@ -162,6 +162,12 @@ export default function DiscoverFilters() {
   const currentSortLabel =
     sortOptions.find((option) => option.value === currentSort)?.label ||
     "Sort By"
+
+  // Check if any advanced filters are applied
+  const hasAdvancedFilters =
+    currentYearFrom !== (currentYear - 10).toString() ||
+    currentYearTo !== currentYear.toString() ||
+    currentVoteCount !== "0"
 
   return (
     <motion.div
@@ -396,6 +402,93 @@ export default function DiscoverFilters() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Active Filters Display */}
+      <AnimatePresence>
+        {(currentGenre || hasAdvancedFilters) && (
+          <motion.div
+            className="flex flex-wrap gap-2 pt-2"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex items-center mr-2">
+              <Tag className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">Active Filters:</span>
+            </div>
+
+            {currentGenre && (
+              <motion.div
+                className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md flex items-center gap-1 text-xs"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span>Genre: {currentGenre}</span>
+                <button
+                  className="hover:bg-secondary-foreground/10 rounded-full p-0.5"
+                  onClick={clearGenreFilter}
+                  title="Remove filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </motion.div>
+            )}
+
+            {currentYearFrom !== (currentYear - 10).toString() && (
+              <motion.div
+                className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md flex items-center gap-1 text-xs"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span>From Year: {currentYearFrom}</span>
+              </motion.div>
+            )}
+
+            {currentYearTo !== currentYear.toString() && (
+              <motion.div
+                className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md flex items-center gap-1 text-xs"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span>To Year: {currentYearTo}</span>
+              </motion.div>
+            )}
+
+            {currentVoteCount !== "0" && (
+              <motion.div
+                className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md flex items-center gap-1 text-xs"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span>Min. Votes: {currentVoteCount}</span>
+              </motion.div>
+            )}
+
+            <motion.div
+              className="bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 text-xs cursor-pointer"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+              onClick={resetAllFilters}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span>Clear All</span>
+              <X className="h-3 w-3" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Loading indicator */}
       <AnimatePresence>
