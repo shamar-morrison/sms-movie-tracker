@@ -1,10 +1,9 @@
-import MovieCollection from "@/components/movie-collection"
-import { Metadata } from "next"
+"use client"
 
-export const metadata: Metadata = {
-  title: "My Collection | Movie Tracker",
-  description: "View and manage your movie collection",
-}
+import CollectionContent from "@/components/collection-content"
+import { CollectionProvider } from "@/components/collection-provider"
+import { MovieSkeleton } from "@/components/ui/movie-skeleton"
+import { Suspense } from "react"
 
 export default function CollectionPage() {
   return (
@@ -15,7 +14,12 @@ export default function CollectionPage() {
           View and manage your saved movies
         </p>
       </div>
-      <MovieCollection type="collection" />
+
+      <CollectionProvider>
+        <Suspense fallback={<MovieSkeleton count={12} />}>
+          <CollectionContent />
+        </Suspense>
+      </CollectionProvider>
     </div>
   )
 }

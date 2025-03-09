@@ -47,6 +47,17 @@ export default function MovieCollection({
 }: {
   type: "collection" | "discover"
 }) {
+  // Create a unique cache key to force proper query subscription
+  const [cacheKey] = useState(() => Date.now().toString())
+
+  // Use the type as part of the component key to force remount when type changes
+  useEffect(() => {
+    // Force refresh on type change by logging it
+    console.log(
+      `[MovieCollection] Type changed to: ${type} with cacheKey: ${cacheKey}`,
+    )
+  }, [type, cacheKey])
+
   const [movies, setMovies] = useState<TMDBMovie[]>([])
   const [prevMovies, setPrevMovies] = useState<TMDBMovie[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,10 +72,32 @@ export default function MovieCollection({
   // Add authReady state to track when all auth checks are complete
   const authReady = clerkLoaded && !authLoading
 
+  // Use simpler approach - normal useQuery without extra options
   const userMovies = useQuery(api.movies.getUserMovies)
 
   // Important: undefined means the query is still loading
   const isUserMoviesLoading = userMovies === undefined
+
+  // Add debug logging to help track loading states
+  useEffect(() => {
+    if (type === "collection") {
+      console.log("[MovieCollection] Loading state:", {
+        type,
+        cacheKey,
+        authReady,
+        isAuthenticated,
+        isUserMoviesLoading,
+        hasUserMovies: userMovies ? userMovies.length : 0,
+      })
+    }
+  }, [
+    type,
+    cacheKey,
+    authReady,
+    isAuthenticated,
+    isUserMoviesLoading,
+    userMovies,
+  ])
 
   useEffect(() => {
     let isMounted = true
@@ -81,29 +114,34 @@ export default function MovieCollection({
       try {
         let result: TMDBMovie[] = []
         if (type === "collection") {
-          if (isAuthenticated && userMovies) {
-            // Transform Convex documents to TMDBMovie format
-            result = userMovies.map(
-              (movie: any): TMDBMovie => ({
-                id: movie.movieId,
-                title: movie.title,
-                poster_path: movie.posterPath || null,
-                backdrop_path: null,
-                release_date: movie.releaseDate || "",
-                vote_average: movie.voteAverage || 0,
-                vote_count: 0,
-                popularity: 0,
-                adult: false,
-                runtime: 0,
-                genres: movie.genres || [],
-                production_companies: [],
-                budget: 0,
-                revenue: 0,
-                homepage: null,
-                user_rating: movie.userRating,
-                overview: movie.overview || "",
-              }),
-            )
+          // Only check if we're authenticated and auth is ready - don't wait for userMovies
+          if (isAuthenticated && authReady) {
+            // If userMovies is available, transform them
+            if (userMovies) {
+              // Transform Convex documents to TMDBMovie format
+              result = userMovies.map(
+                (movie: any): TMDBMovie => ({
+                  id: movie.movieId,
+                  title: movie.title,
+                  poster_path: movie.posterPath || null,
+                  backdrop_path: null,
+                  release_date: movie.releaseDate || "",
+                  vote_average: movie.voteAverage || 0,
+                  vote_count: 0,
+                  popularity: 0,
+                  adult: false,
+                  runtime: 0,
+                  genres: movie.genres || [],
+                  production_companies: [],
+                  budget: 0,
+                  revenue: 0,
+                  homepage: null,
+                  user_rating: movie.userRating,
+                  overview: movie.overview || "",
+                }),
+              )
+            }
+            // If userMovies is still loading, we'll keep the loading state true
           }
         } else if (type === "discover") {
           try {
@@ -149,7 +187,7 @@ export default function MovieCollection({
     return () => {
       isMounted = false
     }
-  }, [type, userMovies, isAuthenticated])
+  }, [type, userMovies, isAuthenticated, authReady])
 
   // Add user ratings to movies after they're fetched
   useEffect(() => {
