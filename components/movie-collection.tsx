@@ -61,49 +61,10 @@ export default function MovieCollection({
   // Add authReady state to track when all auth checks are complete
   const authReady = clerkLoaded && !authLoading
 
-  const [_, setMoviesInCollection] = useState<Set<number>>(new Set())
-
   const userMovies = useQuery(api.movies.getUserMovies)
 
   // Important: undefined means the query is still loading
   const isUserMoviesLoading = userMovies === undefined
-
-  useEffect(() => {
-    if (userMovies && Array.isArray(userMovies)) {
-      const movieIds = new Set(userMovies.map((movie: any) => movie.movieId))
-      setMoviesInCollection(movieIds)
-    }
-  }, [userMovies])
-
-  // Add user ratings to movies after they're fetched
-  useEffect(() => {
-    if (movies.length > 0 && userMovies && Array.isArray(userMovies)) {
-      const userRatingsMap = new Map<number, number>()
-      userMovies.forEach((movie: any) => {
-        if (movie.movieId && movie.userRating) {
-          userRatingsMap.set(movie.movieId, movie.userRating)
-        }
-      })
-
-      const updatedMovies = movies.map((movie) => {
-        if (userRatingsMap.has(movie.id)) {
-          return {
-            ...movie,
-            user_rating: userRatingsMap.get(movie.id),
-          }
-        }
-        return movie
-      })
-
-      if (
-        updatedMovies.some(
-          (movie, index) => movie.user_rating !== movies[index].user_rating,
-        )
-      ) {
-        setMovies(updatedMovies)
-      }
-    }
-  }, [movies, userMovies])
 
   useEffect(() => {
     let isMounted = true
@@ -146,6 +107,14 @@ export default function MovieCollection({
           }
         } else if (type === "discover") {
           try {
+            // For discover view, if we already have loaded movies and are just
+            // refreshing due to a collection change, keep the existing movies
+            if (prevMovies.length > 0 && userMovies !== undefined) {
+              result = prevMovies
+              setLoading(false)
+              return
+            }
+
             const popularMovies = await getDiscoverMovies()
 
             if (isMounted && popularMovies) {
@@ -182,6 +151,86 @@ export default function MovieCollection({
       isMounted = false
     }
   }, [type, userMovies, isAuthenticated])
+
+  // Add user ratings to movies after they're fetched
+  useEffect(() => {
+    if (movies.length > 0 && userMovies && Array.isArray(userMovies)) {
+      const userRatingsMap = new Map<number, number>()
+      userMovies.forEach((movie: any) => {
+        if (movie.movieId && movie.userRating) {
+          userRatingsMap.set(movie.movieId, movie.userRating)
+        }
+      })
+
+      // Use functional update to avoid dependency on movies
+      setMovies((currentMovies) => {
+        const updatedMovies = currentMovies.map((movie) => {
+          if (userRatingsMap.has(movie.id)) {
+            return {
+              ...movie,
+              user_rating: userRatingsMap.get(movie.id),
+            }
+          }
+          return movie
+        })
+
+        // Check if any rating has changed to avoid unnecessary updates
+        if (
+          updatedMovies.some(
+            (movie, index) =>
+              movie.user_rating !== currentMovies[index].user_rating,
+          )
+        ) {
+          return updatedMovies
+        }
+        return currentMovies
+      })
+    }
+  }, [userMovies]) // Only depend on userMovies
+
+  // Add a separate effect to handle updates to userMovies without reloading all discover movies
+  useEffect(() => {
+    // This effect only handles updating existing movie objects with collection status
+    // It doesn't reload the entire movie list for discover view
+    if (
+      type === "discover" &&
+      movies.length > 0 &&
+      userMovies &&
+      Array.isArray(userMovies)
+    ) {
+      // Just update the movies with new collection status without changing the array
+      const userMovieIds = new Set(
+        userMovies.map((movie: any) => movie.movieId),
+      )
+
+      // Update user ratings without replacing the entire movie list
+      setMovies((currentMovies) => {
+        const updatedMovies = currentMovies.map((movie) => {
+          const userMovie = userMovies.find(
+            (um: any) => um.movieId === movie.id,
+          )
+          if (userMovie?.userRating) {
+            return {
+              ...movie,
+              user_rating: userMovie.userRating,
+            }
+          }
+          return movie
+        })
+
+        // Only update if there's an actual change
+        if (
+          updatedMovies.some(
+            (movie, index) =>
+              movie.user_rating !== currentMovies[index].user_rating,
+          )
+        ) {
+          return updatedMovies
+        }
+        return currentMovies
+      })
+    }
+  }, [userMovies, type]) // Remove movies from dependency array
 
   const handleLoadMore = async () => {
     if (type !== "discover" || isLoadingMore) return

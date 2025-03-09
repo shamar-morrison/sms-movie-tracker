@@ -83,7 +83,10 @@ export default function CollectionButton({
         overview: movieDetails.overview,
       }
 
-      await addMovie({ movie: convexMovie })
+      // Add the movie to collection
+      await addMovie({
+        movie: convexMovie,
+      })
 
       toast.success("Added to your collection", {
         description: `${movieTitle} has been added to your collection`,
@@ -108,7 +111,10 @@ export default function CollectionButton({
     setIsInCollection(false)
 
     try {
-      await removeMovie({ movieId })
+      // Remove the movie from collection
+      await removeMovie({
+        movieId,
+      })
 
       toast.success("Removed from your collection", {
         description: `${movieTitle} has been removed from your collection`,
