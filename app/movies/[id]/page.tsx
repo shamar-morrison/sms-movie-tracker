@@ -162,10 +162,15 @@ export default function MoviePage({ params }: { params: { id: string } }) {
                   }}
                   size="default"
                   variant="default"
+                  className="w-full"
                 />
 
                 {trailer && (
-                  <MovieTrailer name={trailer.name} youtubeKey={trailer.key} />
+                  <MovieTrailer
+                    name={trailer.name}
+                    youtubeKey={trailer.key}
+                    className="w-full"
+                  />
                 )}
               </div>
             </div>
@@ -215,7 +220,7 @@ export default function MoviePage({ params }: { params: { id: string } }) {
               ))}
             </div>
 
-            <div className="flex md:hidden gap-2">
+            <div className="flex flex-col md:hidden gap-2">
               <CollectionButton
                 movieId={movie.id}
                 movieTitle={movie.title}
@@ -226,12 +231,16 @@ export default function MoviePage({ params }: { params: { id: string } }) {
                   genres: movie.genres,
                   overview: movie.overview,
                 }}
-                className="flex-1"
+                className="w-full"
                 variant="default"
               />
 
               {trailer && (
-                <MovieTrailer name={trailer.name} youtubeKey={trailer.key} />
+                <MovieTrailer
+                  name={trailer.name}
+                  youtubeKey={trailer.key}
+                  className="w-full"
+                />
               )}
             </div>
 

@@ -14,15 +14,23 @@ import { useState } from "react"
 interface MovieTrailerProps {
   name: string
   youtubeKey: string
+  className?: string
 }
 
-export default function MovieTrailer({ name, youtubeKey }: MovieTrailerProps) {
+export default function MovieTrailer({
+  name,
+  youtubeKey,
+  className = "",
+}: MovieTrailerProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2 w-full">
+        <Button
+          variant="outline"
+          className={`flex items-center gap-2 w-full ${className}`}
+        >
           <Play className="h-4 w-4" />
           Watch Trailer
         </Button>

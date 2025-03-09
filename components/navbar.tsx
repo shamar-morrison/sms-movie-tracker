@@ -64,13 +64,7 @@ export function Navbar() {
           </div>
           <div className="sm:hidden">
             {isSignedIn ? (
-              <Button
-                asChild
-                variant={pathname === "/profile" ? "default" : "ghost"}
-                size="sm"
-              >
-                <Link href="/profile">Profile</Link>
-              </Button>
+              <UserButton />
             ) : (
               <SignInButton>
                 <Button variant="default" size="sm">

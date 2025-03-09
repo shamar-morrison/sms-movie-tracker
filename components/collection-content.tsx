@@ -117,7 +117,7 @@ export default function CollectionContent() {
       <AnimatePresence mode="wait">
         <motion.div
           key="movie-grid"
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+          className="grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
