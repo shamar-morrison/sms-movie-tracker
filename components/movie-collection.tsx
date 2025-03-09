@@ -325,7 +325,7 @@ export default function MovieCollection({
                     <h3 className="font-semibold line-clamp-1">
                       {movie.title}
                     </h3>
-                    <div className="flex items-center justify-between mt-1">
+                    <div className="mt-2 flex justify-between items-center">
                       <div className="text-sm text-muted-foreground">
                         {movie.release_date
                           ? new Date(movie.release_date).getFullYear()
@@ -338,17 +338,6 @@ export default function MovieCollection({
                         </span>
                       </div>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {movie.genres?.slice(0, 2).map((genre: any) => (
-                        <Badge
-                          key={genre.id}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {genre.name}
-                        </Badge>
-                      ))}
-                    </div>
                     <CollectionButton
                       movieId={movie.id}
                       movieTitle={movie.title}
@@ -356,7 +345,7 @@ export default function MovieCollection({
                         poster_path: movie.poster_path,
                         release_date: movie.release_date,
                         vote_average: movie.vote_average,
-                        genres: movie.genres || [],
+                        genres: movie.genres,
                         overview: movie.overview,
                       }}
                     />
