@@ -10,6 +10,7 @@ import {
   useEffect,
   useState,
 } from "react"
+import { ratingChangeEvent } from "./collection-button"
 
 type CollectionContextType = {
   collectionMovies: any[] | undefined
@@ -131,6 +132,27 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId)
     }
   }, [fetchCollectionData, refreshTrigger])
+
+  // Listen for rating change events from CollectionButton
+  useEffect(() => {
+    const handleRatingChange = (event: Event) => {
+      const customEvent = event as CustomEvent
+      console.log(
+        "[CollectionProvider] Rating change event received",
+        customEvent.detail,
+      )
+
+      // Force refresh the collection data
+      refreshCollection()
+    }
+
+    // Listen for rating change events
+    ratingChangeEvent.addEventListener("ratingChange", handleRatingChange)
+
+    return () => {
+      ratingChangeEvent.removeEventListener("ratingChange", handleRatingChange)
+    }
+  }, [refreshCollection])
 
   return (
     <CollectionContext.Provider

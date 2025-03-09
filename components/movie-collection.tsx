@@ -13,7 +13,7 @@ import { Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import CollectionButton from "./collection-button"
+import CollectionButton, { ratingChangeEvent } from "./collection-button"
 
 // Animation variants for the grid container
 const containerVariants = {
@@ -69,35 +69,50 @@ export default function MovieCollection({
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
   const { isSignedIn, isLoaded: clerkLoaded } = useAuth()
 
-  // Add authReady state to track when all auth checks are complete
   const authReady = clerkLoaded && !authLoading
 
-  // Use simpler approach - normal useQuery without extra options
   const userMovies = useQuery(api.movies.getUserMovies)
 
   // Important: undefined means the query is still loading
   const isUserMoviesLoading = userMovies === undefined
 
-  // Add debug logging to help track loading states
+  // Track when userMovies data was last updated to force UI refresh when needed
+  const [userMoviesTimestamp, setUserMoviesTimestamp] = useState(Date.now())
+
+  // Explicitly track movie ratings in a separate state to ensure UI updates
+  const [movieRatings, setMovieRatings] = useState<Map<number, number>>(
+    new Map(),
+  )
+
+  // Update movie ratings map whenever userMovies changes
   useEffect(() => {
-    if (type === "collection") {
-      console.log("[MovieCollection] Loading state:", {
-        type,
-        cacheKey,
-        authReady,
-        isAuthenticated,
-        isUserMoviesLoading,
-        hasUserMovies: userMovies ? userMovies.length : 0,
+    if (userMovies && Array.isArray(userMovies)) {
+      const newRatings = new Map<number, number>()
+      userMovies.forEach((movie: any) => {
+        if (movie.movieId && movie.userRating) {
+          newRatings.set(movie.movieId, movie.userRating)
+        }
       })
+      setMovieRatings(newRatings)
+      setUserMoviesTimestamp(Date.now())
+
+      // If we're on the discover page and already have movies loaded, update them with ratings
+      if (type === "discover" && movies.length > 0) {
+        setMovies((prevMovies) => {
+          return prevMovies.map((movie) => {
+            const rating = newRatings.get(movie.id)
+            if (rating) {
+              return { ...movie, user_rating: rating }
+            } else if (movie.user_rating) {
+              // Remove rating if it no longer exists
+              return { ...movie, user_rating: undefined }
+            }
+            return movie
+          })
+        })
+      }
     }
-  }, [
-    type,
-    cacheKey,
-    authReady,
-    isAuthenticated,
-    isUserMoviesLoading,
-    userMovies,
-  ])
+  }, [userMovies, type])
 
   useEffect(() => {
     let isMounted = true
@@ -223,7 +238,7 @@ export default function MovieCollection({
         return currentMovies
       })
     }
-  }, [userMovies]) // Only depend on userMovies
+  }, [userMovies])
 
   // Add a separate effect to handle updates to userMovies without reloading all discover movies
   useEffect(() => {
@@ -264,6 +279,47 @@ export default function MovieCollection({
     }
   }, [userMovies, type])
 
+  // This is a direct side effect of our ratingChangeEvent that forces a refetch of userMovies
+  useEffect(() => {
+    const forceRefetchUserMovies = async () => {
+      if (type === "discover") {
+        try {
+          // Use convex.query directly to bypass caching if needed
+          await fetch("/api/movies/refresh", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ timestamp: Date.now() }),
+          })
+        } catch (error) {
+          console.error("[MovieCollection] Error in force refetch:", error)
+        }
+      }
+    }
+
+    const handleRatingChange = (event: CustomEvent) => {
+      // Force UI update by updating timestamp
+      setUserMoviesTimestamp(Date.now())
+
+      // If movie just added to collection, immediately update UI to show user_rating if available
+      if (event.detail?.action === "add" && event.detail?.movieId) {
+        forceRefetchUserMovies()
+      }
+    }
+
+    // Listen for rating change events
+    ratingChangeEvent.addEventListener(
+      "ratingChange",
+      handleRatingChange as EventListener,
+    )
+
+    return () => {
+      ratingChangeEvent.removeEventListener(
+        "ratingChange",
+        handleRatingChange as EventListener,
+      )
+    }
+  }, [type])
+
   const handleLoadMore = async () => {
     if (type !== "discover" || isLoadingMore) return
 
@@ -283,7 +339,6 @@ export default function MovieCollection({
           (movie) => !existingMovieIds.has(movie.id),
         )
 
-        // Only update if we have unique new movies
         if (uniqueNewMovies.length > 0) {
           setMovies([...movies, ...uniqueNewMovies])
           setCurrentPage(nextPage + 1)
@@ -400,14 +455,20 @@ export default function MovieCollection({
                       fill
                       className="object-cover transition-transform group-hover:scale-105"
                     />
-                    {movie.user_rating && (
-                      <div className="absolute top-2 right-2 z-20">
+                    {/* Use our movie ratings map for immediate UI updates */}
+                    {(movie.user_rating || movieRatings.has(movie.id)) && (
+                      <div
+                        className="absolute top-2 right-2 z-20"
+                        key={`rating-${movie.id}-${userMoviesTimestamp}`}
+                      >
                         <Badge
                           variant="secondary"
                           className="flex items-center gap-1"
                         >
                           <Star className="h-3 w-3 fill-primary text-primary" />
-                          <span>{movie.user_rating}/10</span>
+                          <span>
+                            {movieRatings.get(movie.id) || movie.user_rating}/10
+                          </span>
                         </Badge>
                       </div>
                     )}

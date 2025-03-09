@@ -10,6 +10,17 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
+export const ratingChangeEvent = new EventTarget()
+
+// Allow forcing a refresh of Convex data
+export function triggerConvexRefresh() {
+  ratingChangeEvent.dispatchEvent(
+    new CustomEvent("ratingChange", {
+      detail: { timestamp: Date.now() },
+    }),
+  )
+}
+
 interface CollectionButtonProps {
   movieId: number
   movieTitle: string
@@ -44,7 +55,6 @@ export default function CollectionButton({
   const pathname = usePathname()
   const isCollectionPage = pathname === "/collection"
 
-  // Get the collection context if we're on the collection page
   const { removeMovieFromState } = useCollection()
 
   const userMovie = useQuery(api.movies.getUserMovie, { movieId })
@@ -52,7 +62,6 @@ export default function CollectionButton({
   const addMovie = useMutation(api.movies.addMovieToCollection)
   const removeMovie = useMutation(api.movies.removeMovieFromCollection)
 
-  // Update isInCollection state when userMovie changes
   useEffect(() => {
     if (userMovie) {
       setIsInCollection(true)
@@ -90,10 +99,29 @@ export default function CollectionButton({
         overview: movieDetails.overview,
       }
 
-      // Add the movie to collection
-      await addMovie({
+      const result = await addMovie({
         movie: convexMovie,
       })
+
+      console.log("[CollectionButton] Movie added, triggering refresh", movieId)
+
+      // Dispatch an event to notify components that a rating change occurred
+      // Pass more details to help with debugging
+      ratingChangeEvent.dispatchEvent(
+        new CustomEvent("ratingChange", {
+          detail: {
+            movieId,
+            action: "add",
+            timestamp: Date.now(),
+            result,
+          },
+        }),
+      )
+
+      // Force a small delay to ensure Convex has time to update its data
+      setTimeout(() => {
+        triggerConvexRefresh()
+      }, 100)
 
       toast.success("Added to your collection", {
         description: `${movieTitle} has been added to your collection`,
@@ -120,14 +148,32 @@ export default function CollectionButton({
       removeMovieFromState(movieId)
     }
 
+    const currentRating = userMovie?.userRating
+
     // Optimistically update UI state for this button
     setIsInCollection(false)
 
     try {
-      // Remove the movie from collection
-      await removeMovie({
+      const result = await removeMovie({
         movieId,
       })
+
+      ratingChangeEvent.dispatchEvent(
+        new CustomEvent("ratingChange", {
+          detail: {
+            movieId,
+            action: "remove",
+            previousRating: currentRating,
+            timestamp: Date.now(),
+            result,
+          },
+        }),
+      )
+
+      // Force a small delay to ensure Convex has time to update its data
+      setTimeout(() => {
+        triggerConvexRefresh()
+      }, 100)
 
       toast.success("Removed from your collection", {
         description: `${movieTitle} has been removed from your collection`,
@@ -144,7 +190,6 @@ export default function CollectionButton({
     }
   }
 
-  // Handle not signed in case
   if (!isSignedIn) {
     return (
       <Button
@@ -162,7 +207,6 @@ export default function CollectionButton({
     )
   }
 
-  // Handle loading state
   if (isLoading) {
     return (
       <Button variant={variant} size={size} className={className} disabled>
@@ -171,7 +215,6 @@ export default function CollectionButton({
     )
   }
 
-  // Return the appropriate button based on collection status
   return isInCollection ? (
     <Button
       variant="destructive"
