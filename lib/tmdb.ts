@@ -165,7 +165,6 @@ export async function discoverMovies(
       voteCountGte = "0",
     } = params
 
-    // Prepare API parameters
     const apiParams: Record<string, string> = {
       sort_by: sortBy,
       "vote_count.gte": voteCountGte,
@@ -174,7 +173,6 @@ export async function discoverMovies(
       include_adult: "false",
     }
 
-    // Only add genre filter if specified
     if (genreId) {
       apiParams.with_genres = genreId
     }
@@ -191,17 +189,10 @@ export async function discoverMovies(
       page: "2",
     })
 
-    // Combine results from both pages
     const combinedResults = [
       ...firstPageData.results,
       ...secondPageData.results,
     ]
-
-    // Log the number of results and year range for debugging
-    console.log(`Found ${combinedResults.length} movies with applied filters`)
-    console.log(
-      `Total results available: ${firstPageData.total_results}, Total pages: ${firstPageData.total_pages}`,
-    )
 
     return {
       results: combinedResults,
@@ -262,7 +253,6 @@ export async function loadMoreMoviesByGenre(params: {
       include_adult: "false",
     }
 
-    // Only add genre filter if specified
     if (genreId) {
       apiParams.with_genres = genreId
     }
@@ -273,13 +263,6 @@ export async function loadMoreMoviesByGenre(params: {
       console.error("No results found in API response:", response)
       return []
     }
-
-    console.log(
-      `Found ${response.results.length} additional movies on page ${page}`,
-    )
-    console.log(
-      `Total results available: ${response.total_results}, Total pages: ${response.total_pages}`,
-    )
 
     return response.results
   } catch (error) {
@@ -299,25 +282,5 @@ export async function getPersonById(
   } catch (error) {
     console.error("Error fetching person details:", error)
     return null
-  }
-}
-
-// Get movie videos (trailers, teasers, etc.)
-export async function getMovieVideos(id: string): Promise<
-  {
-    id: string
-    key: string
-    name: string
-    site: string
-    size: number
-    type: string
-  }[]
-> {
-  try {
-    const data = await fetchFromTMDB(`/movie/${id}/videos`)
-    return data.results
-  } catch (error) {
-    console.error("Error fetching movie videos:", error)
-    return []
   }
 }
