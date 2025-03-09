@@ -11,8 +11,8 @@ import {
   getMoviesByPerson,
   getPersonById,
   loadMoreMoviesByGenre,
-  searchMoviesByTitle as tmdbSearchMovies,
   searchPeople,
+  searchMoviesByTitle as tmdbSearchMovies,
 } from "@/lib/tmdb"
 import { useRouter, useSearchParams } from "next/navigation"
 import React, { useEffect, useState } from "react"
@@ -34,6 +34,15 @@ export default function SearchTabs() {
       setActiveTab(tabParam)
     }
   }, [tabParam])
+
+  // Load search query from URL if present
+  useEffect(() => {
+    const queryParam = searchParams.get("query")
+    if (queryParam && tabParam === "movie") {
+      setMovieQuery(queryParam)
+      searchMoviesByTitle(queryParam)
+    }
+  }, [searchParams])
 
   // Load person movies if personId is in URL
   useEffect(() => {
@@ -235,8 +244,19 @@ export default function SearchTabs() {
     setSelectedPersonName(null)
     setMovieResults([])
     setMovieSearchPerformed(false)
-    // Update URL to remove personId and personName
-    router.push(`/search?tab=${activeTab}`, { scroll: false })
+
+    // Check if there was a previous search query
+    const queryParam = searchParams.get("query")
+    if (queryParam) {
+      // If there was a previous search query, keep it in the URL
+      router.push(
+        `/search?tab=${activeTab}&query=${encodeURIComponent(queryParam)}`,
+        { scroll: false },
+      )
+    } else {
+      // Otherwise just remove the personId and personName
+      router.push(`/search?tab=${activeTab}`, { scroll: false })
+    }
   }
 
   const searchPeopleByName = async (query: string) => {
@@ -257,23 +277,22 @@ export default function SearchTabs() {
   }
 
   const selectPerson = async (personId: string) => {
+    setIsSearching(true)
     try {
-      setIsSearching(true)
-
       const person = await getPersonById(personId)
-      if (!person) {
-        console.error("Person not found:", personId)
-        return
+      if (person) {
+        const personName = person.name
+        setSelectedPersonId(personId)
+        setSelectedPersonName(personName)
+
+        // Update URL with personId and personName
+        router.push(
+          `/search?tab=movie&personId=${personId}&personName=${encodeURIComponent(personName)}`,
+          { scroll: false },
+        )
+
+        await loadMoviesByPerson(personId)
       }
-
-      setSelectedPersonId(personId)
-      setSelectedPersonName(person.name)
-
-      const movies = await getMoviesByPerson(personId)
-      setMovieResults(movies)
-      setMovieSearchPerformed(true)
-
-      handleTabChange("movie")
     } catch (error) {
       console.error("Error selecting person:", error)
     } finally {

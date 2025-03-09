@@ -356,7 +356,7 @@ export default function MovieCollection({
                         poster_path: movie.poster_path,
                         release_date: movie.release_date,
                         vote_average: movie.vote_average,
-                        genres: movie.genres,
+                        genres: movie.genres || [],
                         overview: movie.overview,
                       }}
                     />

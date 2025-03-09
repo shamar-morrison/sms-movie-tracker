@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import type React from "react"
 import { Dispatch, SetStateAction } from "react"
 
@@ -29,9 +30,16 @@ export default function MovieSearch({
   onSearch,
   onClearPerson,
 }: MovieSearchProps) {
+  const router = useRouter()
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
+
+    // Update URL with the search query
+    router.push(`/search?tab=movie&query=${encodeURIComponent(query)}`, {
+      scroll: false,
+    })
 
     await onSearch(query)
   }

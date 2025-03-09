@@ -109,7 +109,29 @@ export async function getDiscoverMovies(): Promise<TMDBMovie[]> {
     const data = await fetchFromTMDB("/discover/movie", {
       sort_by: "popularity.desc",
     })
-    return data.results
+
+    // Fetch detailed information for each movie to include genres
+    const moviesWithDetails = await Promise.all(
+      data.results.map(async (movie: any) => {
+        try {
+          const details = await fetchFromTMDB(`/movie/${movie.id}`, {
+            append_to_response: "credits,videos",
+          })
+          return {
+            ...movie,
+            genres: details.genres || [],
+          }
+        } catch (error) {
+          console.error(`Error fetching details for movie ${movie.id}:`, error)
+          return {
+            ...movie,
+            genres: [],
+          }
+        }
+      }),
+    )
+
+    return moviesWithDetails
   } catch (error) {
     console.error("Error discovering movies:", error)
     return []
