@@ -110,7 +110,6 @@ export default function MovieCollection({
             // For discover view, if we already have loaded movies and are just
             // refreshing due to a collection change, keep the existing movies
             if (prevMovies.length > 0 && userMovies !== undefined) {
-              result = prevMovies
               setLoading(false)
               return
             }
@@ -198,11 +197,6 @@ export default function MovieCollection({
       userMovies &&
       Array.isArray(userMovies)
     ) {
-      // Just update the movies with new collection status without changing the array
-      const userMovieIds = new Set(
-        userMovies.map((movie: any) => movie.movieId),
-      )
-
       // Update user ratings without replacing the entire movie list
       setMovies((currentMovies) => {
         const updatedMovies = currentMovies.map((movie) => {
@@ -230,7 +224,7 @@ export default function MovieCollection({
         return currentMovies
       })
     }
-  }, [userMovies, type]) // Remove movies from dependency array
+  }, [userMovies, type])
 
   const handleLoadMore = async () => {
     if (type !== "discover" || isLoadingMore) return
@@ -238,7 +232,6 @@ export default function MovieCollection({
     setIsLoadingMore(true)
 
     try {
-      // Simplified version - just load the next page of popular movies
       const nextPage = currentPage
 
       const additionalMovies = await loadMoreMoviesByGenre({
@@ -246,8 +239,19 @@ export default function MovieCollection({
       })
 
       if (additionalMovies && additionalMovies.length > 0) {
-        setMovies([...movies, ...additionalMovies])
-        setCurrentPage(nextPage + 1)
+        // Filter out any movies that are already in the list to avoid duplicates
+        const existingMovieIds = new Set(movies.map((movie) => movie.id))
+        const uniqueNewMovies = additionalMovies.filter(
+          (movie) => !existingMovieIds.has(movie.id),
+        )
+
+        // Only update if we have unique new movies
+        if (uniqueNewMovies.length > 0) {
+          setMovies([...movies, ...uniqueNewMovies])
+          setCurrentPage(nextPage + 1)
+        } else {
+          setCurrentPage(nextPage + 1)
+        }
       }
     } catch (error) {
       console.error("Error loading more movies:", error)
