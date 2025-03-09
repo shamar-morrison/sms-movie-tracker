@@ -2,6 +2,7 @@ import SearchTabs from "@/components/search-tabs"
 import { ArrowLeft } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "Search Movies | MovieTracker",
@@ -19,7 +20,11 @@ export default function SearchPage() {
           <h1 className="text-3xl font-bold">Search</h1>
         </div>
       </div>
-      <SearchTabs />
+      <Suspense
+        fallback={<div className="text-center py-6">Loading search...</div>}
+      >
+        <SearchTabs />
+      </Suspense>
     </div>
   )
 }
