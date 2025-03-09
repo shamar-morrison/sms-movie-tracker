@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { MovieSkeleton } from "@/components/ui/movie-skeleton"
 import { TMDBMovie } from "@/lib/tmdb"
 import { AnimatePresence, motion } from "framer-motion"
-import { RefreshCw, Star } from "lucide-react"
+import { Loader2, RefreshCw, Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -40,8 +40,10 @@ const cardVariants = {
 }
 
 export default function CollectionContent() {
-  const { collectionMovies, isLoading, refreshCollection } = useCollection()
+  const { collectionMovies, isLoading, refreshCollection, isInitialized } =
+    useCollection()
   const [movies, setMovies] = useState<TMDBMovie[]>([])
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     if (collectionMovies) {
@@ -68,14 +70,32 @@ export default function CollectionContent() {
         }),
       )
       setMovies(transformedMovies)
+      if (isRefreshing) {
+        setIsRefreshing(false)
+      }
     }
-  }, [collectionMovies])
+  }, [collectionMovies, isRefreshing])
 
-  if (isLoading) {
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    refreshCollection()
+  }
+
+  // Don't render anything during SSR to avoid hydration issues
+  if (!isMounted) {
+    return null
+  }
+
+  if ((isLoading && !isInitialized) || (!isInitialized && !collectionMovies)) {
     return <MovieSkeleton count={12} />
   }
 
-  if (!movies || movies.length === 0) {
+  if ((!movies || movies.length === 0) && isInitialized) {
     return (
       <motion.div
         className="rounded-xl border bg-card p-8 text-center"
@@ -89,9 +109,15 @@ export default function CollectionContent() {
         <p className="text-muted-foreground mb-6">
           Start exploring and adding movies to your collection
         </p>
-        <Button asChild>
-          <Link href="/discover">Discover Movies</Link>
-        </Button>
+        <div className="flex flex-col gap-3 items-center">
+          <Button asChild>
+            <Link href="/discover">Discover Movies</Link>
+          </Button>
+          <Button variant="outline" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </motion.div>
     )
   }
@@ -106,11 +132,16 @@ export default function CollectionContent() {
         <Button
           variant="outline"
           size="sm"
-          onClick={refreshCollection}
+          onClick={handleRefresh}
+          disabled={isRefreshing}
           className="flex items-center gap-1"
         >
-          <RefreshCw className="h-4 w-4" />
-          <span>Refresh</span>
+          {isRefreshing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
         </Button>
       </div>
 

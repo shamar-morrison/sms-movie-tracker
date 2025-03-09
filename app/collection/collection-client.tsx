@@ -3,9 +3,22 @@
 import CollectionContent from "@/components/collection-content"
 import { CollectionProvider } from "@/components/collection-provider"
 import { MovieSkeleton } from "@/components/ui/movie-skeleton"
-import { Suspense } from "react"
+import { Suspense, useEffect, useState } from "react"
 
 export default function CollectionClient() {
+  // Use a key state to force remount of components when needed
+  const [componentKey, setComponentKey] = useState(Date.now())
+
+  // Force a remount on initial client-side render
+  useEffect(() => {
+    // Small delay to ensure all client-side code is ready
+    const timer = setTimeout(() => {
+      setComponentKey(Date.now())
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <div className="container py-10">
       <div className="mb-8">
@@ -15,7 +28,7 @@ export default function CollectionClient() {
         </p>
       </div>
 
-      <CollectionProvider>
+      <CollectionProvider key={componentKey}>
         <Suspense fallback={<MovieSkeleton count={12} />}>
           <CollectionContent />
         </Suspense>

@@ -5,6 +5,7 @@ import { useConvex } from "convex/react"
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -15,6 +16,7 @@ type CollectionContextType = {
   isLoading: boolean
   refreshCollection: () => void
   removeMovieFromState: (movieId: number) => void
+  isInitialized: boolean
 }
 
 const CollectionContext = createContext<CollectionContextType>({
@@ -22,6 +24,7 @@ const CollectionContext = createContext<CollectionContextType>({
   isLoading: true,
   refreshCollection: () => {},
   removeMovieFromState: () => {},
+  isInitialized: false,
 })
 
 export const useCollection = () => useContext(CollectionContext)
@@ -32,7 +35,9 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     undefined,
   )
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [retryCount, setRetryCount] = useState(0)
 
   // optimistically removes a movie from the state without triggering a full refresh
   const removeMovieFromState = (movieId: number) => {
@@ -44,44 +49,88 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
   }
 
   // to force refresh - only use when absolutely necessary
-  const refreshCollection = () => {
+  const refreshCollection = useCallback(() => {
     console.log("[CollectionProvider] Full refresh triggered")
     setIsLoading(true)
     setRefreshTrigger((prev) => prev + 1)
-  }
+  }, [])
 
-  // Direct query using the client instead of useQuery hook
+  // Fetch collection with retry logic
+  const fetchCollectionData = useCallback(async () => {
+    try {
+      console.log("[CollectionProvider] Fetching collection data...")
+      // Direct query using the Convex client - bypasses useQuery's caching
+      const result = await convex.query(api.movies.getUserMovies)
+      console.log(
+        `[CollectionProvider] Collection data fetched:`,
+        result ? result.length : 0,
+        "items",
+      )
+
+      if (result && Array.isArray(result)) {
+        setCollectionMovies(result)
+        setIsInitialized(true)
+        setIsLoading(false)
+        setRetryCount(0)
+      } else {
+        setCollectionMovies([])
+        setIsInitialized(true)
+        setIsLoading(false)
+      }
+    } catch (error) {
+      console.error("[CollectionProvider] Error fetching collection:", error)
+
+      // If we've retried less than 3 times, try again
+      if (retryCount < 3) {
+        console.log(`[CollectionProvider] Retrying... (${retryCount + 1}/3)`)
+        setRetryCount((prev) => prev + 1)
+        // Wait a bit longer between each retry
+        setTimeout(
+          () => {
+            setRefreshTrigger((prev) => prev + 1)
+          },
+          1000 * (retryCount + 1),
+        )
+      } else {
+        // After 3 retries, give up and show empty state
+        setIsLoading(false)
+        setIsInitialized(true)
+      }
+    }
+  }, [convex, retryCount])
+
+  // Effect to detect page refresh
+  useEffect(() => {
+    // This will run only on the first render after a refresh
+    const pageRefreshed = sessionStorage.getItem("pageRefreshed") !== "true"
+    if (pageRefreshed) {
+      console.log("[CollectionProvider] Page was refreshed")
+      sessionStorage.setItem("pageRefreshed", "true")
+
+      setIsLoading(true)
+      setIsInitialized(false)
+    }
+
+    return () => {
+      sessionStorage.removeItem("pageRefreshed")
+    }
+  }, [])
+
   useEffect(() => {
     let isMounted = true
 
-    async function fetchCollection() {
-      // Only show loading indicator on first load, not during refreshes
-      if (!collectionMovies) {
-        setIsLoading(true)
+    // Don't start fetching immediately, give Convex a moment to initialize
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        fetchCollectionData()
       }
-
-      try {
-        // Direct query using the Convex client - bypasses useQuery's caching
-        const result = await convex.query(api.movies.getUserMovies)
-
-        if (isMounted) {
-          setCollectionMovies(result)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        console.error("[CollectionProvider] Error fetching collection:", error)
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchCollection()
+    }, 100)
 
     return () => {
       isMounted = false
+      clearTimeout(timeoutId)
     }
-  }, [convex, refreshTrigger])
+  }, [fetchCollectionData, refreshTrigger])
 
   return (
     <CollectionContext.Provider
@@ -90,6 +139,7 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
         isLoading,
         refreshCollection,
         removeMovieFromState,
+        isInitialized,
       }}
     >
       {children}
