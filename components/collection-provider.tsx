@@ -3,28 +3,27 @@
 import { api } from "@/convex/_generated/api"
 import { useConvex } from "convex/react"
 import {
-  ReactNode,
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useState,
 } from "react"
 
-// Define the context type
 type CollectionContextType = {
   collectionMovies: any[] | undefined
   isLoading: boolean
   refreshCollection: () => void
+  removeMovieFromState: (movieId: number) => void
 }
 
-// Create context with defaults
 const CollectionContext = createContext<CollectionContextType>({
   collectionMovies: undefined,
   isLoading: true,
   refreshCollection: () => {},
+  removeMovieFromState: () => {},
 })
 
-// Custom hook to use the collection context
 export const useCollection = () => useContext(CollectionContext)
 
 export function CollectionProvider({ children }: { children: ReactNode }) {
@@ -35,41 +34,18 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // This effect will run whenever a collection button is clicked
-  // and will listen for mutation events involving the collection
-  useEffect(() => {
-    // Function to detect for collection-related events
-    const checkForCollectionChanges = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (target.closest("button")) {
-        const buttonText = target.textContent?.toLowerCase() || ""
-
-        // Check if this was a collection-related button click
-        if (
-          buttonText.includes("collection") ||
-          buttonText.includes("remove")
-        ) {
-          // Wait a bit for the mutation to complete, then refresh
-          setTimeout(() => {
-            console.log(
-              "[CollectionProvider] Collection change detected, refreshing...",
-            )
-            refreshCollection()
-          }, 500)
-        }
-      }
+  // optimistically removes a movie from the state without triggering a full refresh
+  const removeMovieFromState = (movieId: number) => {
+    if (collectionMovies) {
+      setCollectionMovies((prev) =>
+        prev ? prev.filter((movie) => movie.movieId !== movieId) : prev,
+      )
     }
+  }
 
-    // Add global click listener to detect collection button clicks
-    document.addEventListener("click", checkForCollectionChanges)
-
-    return () => {
-      document.removeEventListener("click", checkForCollectionChanges)
-    }
-  }, [])
-
-  // Function to force refresh
+  // to force refresh - only use when absolutely necessary
   const refreshCollection = () => {
+    console.log("[CollectionProvider] Full refresh triggered")
     setIsLoading(true)
     setRefreshTrigger((prev) => prev + 1)
   }
@@ -79,19 +55,16 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     let isMounted = true
 
     async function fetchCollection() {
-      console.log("[CollectionProvider] Fetching collection directly...")
-      setIsLoading(true)
+      // Only show loading indicator on first load, not during refreshes
+      if (!collectionMovies) {
+        setIsLoading(true)
+      }
 
       try {
         // Direct query using the Convex client - bypasses useQuery's caching
         const result = await convex.query(api.movies.getUserMovies)
 
         if (isMounted) {
-          console.log(
-            "[CollectionProvider] Collection fetched:",
-            result?.length || 0,
-            "items",
-          )
           setCollectionMovies(result)
           setIsLoading(false)
         }
@@ -116,6 +89,7 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
         collectionMovies,
         isLoading,
         refreshCollection,
+        removeMovieFromState,
       }}
     >
       {children}

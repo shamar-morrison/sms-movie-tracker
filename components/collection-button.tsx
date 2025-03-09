@@ -1,10 +1,12 @@
 "use client"
 
+import { useCollection } from "@/components/collection-provider"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
 import { showAuthToast } from "@/lib/utils"
 import { useAuth } from "@clerk/nextjs"
 import { useMutation, useQuery } from "convex/react"
+import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -39,6 +41,11 @@ export default function CollectionButton({
 }: CollectionButtonProps) {
   const { isSignedIn } = useAuth()
   const [isInCollection, setIsInCollection] = useState<boolean | null>(null)
+  const pathname = usePathname()
+  const isCollectionPage = pathname === "/collection"
+
+  // Get the collection context if we're on the collection page
+  const { removeMovieFromState } = useCollection()
 
   const userMovie = useQuery(api.movies.getUserMovie, { movieId })
 
@@ -107,7 +114,13 @@ export default function CollectionButton({
     e.preventDefault() // Prevent navigating to movie details
     e.stopPropagation()
 
-    // Optimistically update UI
+    // If we're on the collection page, use the optimistic removal approach
+    if (isCollectionPage) {
+      // Use our optimistic removal function to update the UI immediately
+      removeMovieFromState(movieId)
+    }
+
+    // Optimistically update UI state for this button
     setIsInCollection(false)
 
     try {
@@ -122,6 +135,7 @@ export default function CollectionButton({
     } catch (error) {
       // Revert optimistic update on error
       setIsInCollection(true)
+
       console.error("Error removing movie from collection:", error)
       toast.error("Failed to remove movie", {
         description:
