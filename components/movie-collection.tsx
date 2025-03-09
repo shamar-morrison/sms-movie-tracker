@@ -151,7 +151,6 @@ export default function MovieCollection({
             if (isMounted && popularMovies) {
               result = popularMovies
 
-              // Set defaults for pagination
               setTotalResults(1000) // Just a reasonable default
               setTotalPages(50) // Just a reasonable default
               setCurrentPage(2) // Start from page 2 for "load more"
