@@ -1,6 +1,7 @@
 "use client"
 
 import CollectionButton from "@/components/collection-button"
+import { InfoTooltip } from "@/components/info-tooltip"
 import MovieRating from "@/components/movie-rating"
 import MovieTrailer from "@/components/movie-trailer"
 import { Badge } from "@/components/ui/badge"
@@ -251,7 +252,11 @@ export default function MoviePage({ params }: { params: { id: string } }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card>
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                <CardContent className="p-4 flex flex-col items-center justify-center text-center relative">
+                  <InfoTooltip
+                    text="Average rating from TMDB users on a scale of 1-10"
+                    className="absolute top-2 right-2"
+                  />
                   <div className="text-3xl font-bold">
                     {movie.vote_average.toFixed(1)}
                   </div>
@@ -261,20 +266,28 @@ export default function MoviePage({ params }: { params: { id: string } }) {
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                <CardContent className="p-4 flex flex-col items-center justify-center text-center relative">
+                  <InfoTooltip
+                    text="Total number of users who have rated this movie on TMDB"
+                    className="absolute top-2 right-2"
+                  />
                   <div className="text-3xl font-bold">{movie.vote_count}</div>
                   <div className="text-sm text-muted-foreground">
-                    Vote Count
+                    Number of Ratings
                   </div>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                <CardContent className="p-4 flex flex-col items-center justify-center text-center relative">
+                  <InfoTooltip
+                    text="TMDB's metric for current popularity based on page views, searches, and user activity. Higher numbers indicate more trending movies."
+                    className="absolute top-2 right-2"
+                  />
                   <div className="text-3xl font-bold">
                     {movie.popularity.toFixed(0)}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Popularity
+                    Trending Score
                   </div>
                 </CardContent>
               </Card>

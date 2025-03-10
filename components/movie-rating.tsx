@@ -237,11 +237,6 @@ export default function MovieRating({
               Your rating for{" "}
               <span data-testid="movie-title">{movieDetails.title}</span>
             </p>
-            {movieDetails.genres && movieDetails.genres.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {movieDetails.genres.map((g) => g.name).join(", ")}
-              </p>
-            )}
           </div>
         )}
       </CardContent>
