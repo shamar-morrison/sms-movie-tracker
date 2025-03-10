@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MovieSkeleton } from "@/components/ui/movie-skeleton"
 import { api } from "@/convex/_generated/api"
-import { getDiscoverMovies, loadMoreMoviesByGenre, TMDBMovie } from "@/lib/tmdb"
+import type { TMDBMovie } from "@/lib/tmdb"
+import { getDiscoverMovies, loadMoreMoviesByGenre } from "@/lib/tmdb"
 import { SignInButton, useAuth } from "@clerk/nextjs"
 import { useConvexAuth, useQuery } from "convex/react"
 import { AnimatePresence, motion } from "framer-motion"
@@ -14,6 +15,22 @@ import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import CollectionButton, { ratingChangeEvent } from "./collection-button"
+
+type CollectionMovie = {
+  _id: string // Convex document ID
+  _creationTime: number
+  userId: string
+  movieId: number
+  title: string
+  posterPath?: string
+  releaseDate?: string
+  voteAverage?: number
+  genreIds?: number[]
+  genres?: { id: number; name: string }[]
+  overview?: string
+  userRating?: number
+  addedAt: number
+}
 
 // Animation variants for the grid container
 const containerVariants = {
@@ -88,7 +105,7 @@ export default function MovieCollection({
   useEffect(() => {
     if (userMovies && Array.isArray(userMovies)) {
       const newRatings = new Map<number, number>()
-      userMovies.forEach((movie: any) => {
+      userMovies.forEach((movie: CollectionMovie) => {
         if (movie.movieId && movie.userRating) {
           newRatings.set(movie.movieId, movie.userRating)
         }
@@ -135,7 +152,7 @@ export default function MovieCollection({
             if (userMovies) {
               // Transform Convex documents to TMDBMovie format
               result = userMovies.map(
-                (movie: any): TMDBMovie => ({
+                (movie: CollectionMovie): TMDBMovie => ({
                   id: movie.movieId,
                   title: movie.title,
                   poster_path: movie.posterPath || null,
@@ -208,7 +225,7 @@ export default function MovieCollection({
   useEffect(() => {
     if (movies.length > 0 && userMovies && Array.isArray(userMovies)) {
       const userRatingsMap = new Map<number, number>()
-      userMovies.forEach((movie: any) => {
+      userMovies.forEach((movie: CollectionMovie) => {
         if (movie.movieId && movie.userRating) {
           userRatingsMap.set(movie.movieId, movie.userRating)
         }
@@ -254,7 +271,7 @@ export default function MovieCollection({
       setMovies((currentMovies) => {
         const updatedMovies = currentMovies.map((movie) => {
           const userMovie = userMovies.find(
-            (um: any) => um.movieId === movie.id,
+            (um: CollectionMovie) => um.movieId === movie.id,
           )
           if (userMovie?.userRating) {
             return {

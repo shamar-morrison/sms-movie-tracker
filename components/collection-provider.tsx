@@ -12,8 +12,25 @@ import {
 } from "react"
 import { ratingChangeEvent } from "./collection-button"
 
+// based on the Convex schema
+type CollectionMovie = {
+  _id: string // Convex document ID
+  _creationTime: number
+  userId: string
+  movieId: number
+  title: string
+  posterPath?: string
+  releaseDate?: string
+  voteAverage?: number
+  genreIds?: number[]
+  genres?: { id: number; name: string }[]
+  overview?: string
+  userRating?: number
+  addedAt: number
+}
+
 type CollectionContextType = {
-  collectionMovies: any[] | undefined
+  collectionMovies: CollectionMovie[] | undefined
   isLoading: boolean
   refreshCollection: () => void
   removeMovieFromState: (movieId: number) => void
@@ -32,9 +49,9 @@ export const useCollection = () => useContext(CollectionContext)
 
 export function CollectionProvider({ children }: { children: ReactNode }) {
   const convex = useConvex()
-  const [collectionMovies, setCollectionMovies] = useState<any[] | undefined>(
-    undefined,
-  )
+  const [collectionMovies, setCollectionMovies] = useState<
+    CollectionMovie[] | undefined
+  >(undefined)
   const [isLoading, setIsLoading] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -93,7 +110,6 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
           1000 * (retryCount + 1),
         )
       } else {
-        // After 3 retries, give up and show empty state
         setIsLoading(false)
         setIsInitialized(true)
       }
@@ -146,7 +162,6 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
       refreshCollection()
     }
 
-    // Listen for rating change events
     ratingChangeEvent.addEventListener("ratingChange", handleRatingChange)
 
     return () => {
