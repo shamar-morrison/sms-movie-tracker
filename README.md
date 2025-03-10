@@ -11,6 +11,67 @@ SMS Movie Tracker allows users to:
 - Rate and review the movies they've watched
 - View their movie collection with filtering options
 
+## Database Structure
+
+Since this project uses Convex (a document-based database) instead of a traditional SQL database, below is the database schema definition:
+
+### Schema (`convex/schema.ts`)
+
+```typescript
+// Convex schema definition
+import { defineSchema, defineTable } from "convex/server"
+import { v } from "convex/values"
+
+export default defineSchema({
+  movieCollection: defineTable({
+    userId: v.string(), // User ID from Clerk authentication
+    movieId: v.number(), // TMDB movie ID
+    title: v.string(), // Movie title
+    posterPath: v.optional(v.string()), // Path to movie poster image
+    releaseDate: v.optional(v.string()), // Movie release date
+    voteAverage: v.optional(v.number()), // Average rating from TMDB
+    genreIds: v.optional(v.array(v.number())), // Array of genre IDs
+    genres: v.optional(
+      v.array(
+        v.object({
+          id: v.number(), // Genre ID
+          name: v.string(), // Genre name
+        }),
+      ),
+    ),
+    overview: v.optional(v.string()), // Movie description/summary
+    userRating: v.optional(v.number()), // User's personal rating
+    addedAt: v.number(), // Timestamp when movie was added
+  }).index("by_user", ["userId"]), // Index to query movies by user
+})
+```
+
+### Data Model
+
+The application uses a single table/collection:
+
+- **movieCollection**: Stores user's saved movies with metadata
+
+#### Key Fields:
+
+- `userId`: Links movies to specific users (from Clerk auth)
+- `movieId`: TMDB's unique identifier for movies
+- `userRating`: Optional user-provided rating
+- `addedAt`: Timestamp to track when movies were added
+
+#### Indexes:
+
+- `by_user`: Optimizes queries to find all movies for a specific user
+
+### Query and Mutation Functions
+
+The database is accessed through Convex functions in `convex/movies.ts`, which provide:
+
+- Query functions to retrieve user's movies
+- Mutation functions to add, update, and remove movies from a user's collection
+
+This document-based approach eliminates the need for complex SQL joins while maintaining data relationships through the `userId` field.
+
 ## Technologies Used
 
 - **Frontend**:
