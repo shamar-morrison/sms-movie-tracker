@@ -1,5 +1,6 @@
 "use client"
 
+import { TMDBMovie } from "@/lib/tmdb"
 import type React from "react"
 import { Dispatch, SetStateAction } from "react"
 
@@ -11,7 +12,7 @@ import { Search } from "lucide-react"
 interface MovieSearchProps {
   query: string
   setQuery: Dispatch<SetStateAction<string>>
-  results: any[]
+  results: TMDBMovie[]
   isSearching: boolean
   personName: string | null
   searchPerformed: boolean

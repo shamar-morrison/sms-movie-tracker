@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { TMDBPerson } from "@/lib/tmdb"
 import { AnimatePresence, motion } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
@@ -31,7 +32,7 @@ const cardVariants = {
 }
 
 interface PersonResultsProps {
-  results: any[]
+  results: TMDBPerson[]
   showEmptyMessage?: boolean
   onSelectPerson?: (id: string) => Promise<void>
 }
@@ -53,9 +54,9 @@ export default function PersonResults({
     return null
   }
 
-  const handlePersonClick = (id: string) => {
+  const handlePersonClick = (id: string | number) => {
     if (onSelectPerson) {
-      onSelectPerson(id)
+      onSelectPerson(id.toString())
     }
   }
 

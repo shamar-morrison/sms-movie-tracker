@@ -1,17 +1,18 @@
 "use client"
 
+import { TMDBPerson } from "@/lib/tmdb"
 import type React from "react"
+import { Dispatch, SetStateAction } from "react"
 
 import PersonResults from "@/components/search/person-results"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
-import { Dispatch, SetStateAction } from "react"
 
 interface PersonSearchProps {
   query: string
   setQuery: Dispatch<SetStateAction<string>>
-  results: any[]
+  results: TMDBPerson[]
   isSearching: boolean
   searchPerformed: boolean
   onSearch: (query: string) => Promise<void>
@@ -25,9 +26,8 @@ export default function PersonSearch({
   isSearching,
   searchPerformed,
   onSearch,
-  onSelectPerson
+  onSelectPerson,
 }: PersonSearchProps) {
-
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
@@ -38,8 +38,12 @@ export default function PersonSearch({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-2">Search by Actor or Director</h2>
-        <p className="text-muted-foreground">Find movies featuring specific actors or made by specific directors.</p>
+        <h2 className="text-xl font-semibold mb-2">
+          Search by Actor or Director
+        </h2>
+        <p className="text-muted-foreground">
+          Find movies featuring specific actors or made by specific directors.
+        </p>
       </div>
 
       <form onSubmit={handleSearch} className="flex w-full max-w-lg gap-2">
@@ -60,20 +64,17 @@ export default function PersonSearch({
 
       {isSearching ? (
         <div className="text-center py-12">Searching...</div>
+      ) : !searchPerformed ? (
+        <div className="text-center py-16 text-muted-foreground">
+          Enter an actor or director name above and click search to find people.
+        </div>
       ) : (
-        !searchPerformed ? (
-          <div className="text-center py-16 text-muted-foreground">
-            Enter an actor or director name above and click search to find people.
-          </div>
-        ) : (
-          <PersonResults 
-            results={results} 
-            showEmptyMessage={searchPerformed} 
-            onSelectPerson={onSelectPerson}
-          />
-        )
+        <PersonResults
+          results={results}
+          showEmptyMessage={searchPerformed}
+          onSelectPerson={onSelectPerson}
+        />
       )}
     </div>
   )
 }
-

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import { api } from "@/convex/_generated/api"
+import { TMDBMovie } from "@/lib/tmdb"
 import { useQuery } from "convex/react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Star } from "lucide-react"
@@ -36,7 +37,7 @@ const cardVariants = {
 }
 
 interface MovieResultsProps {
-  results: any[]
+  results: TMDBMovie[]
   showEmptyMessage?: boolean
 }
 
@@ -54,7 +55,7 @@ export default function MovieResults({
   useEffect(() => {
     if (userMovies && Array.isArray(userMovies)) {
       const ratings: Record<number, number | null> = {}
-      userMovies.forEach((movie: any) => {
+      userMovies.forEach((movie: { movieId?: number; userRating?: number }) => {
         if (movie.movieId && movie.userRating) {
           ratings[movie.movieId] = movie.userRating
         }
@@ -136,11 +137,13 @@ export default function MovieResults({
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-1">
-                {movie.genres?.slice(0, 2).map((genre: any) => (
-                  <Badge key={genre.id} variant="outline" className="text-xs">
-                    {genre.name}
-                  </Badge>
-                ))}
+                {movie.genres
+                  ?.slice(0, 2)
+                  .map((genre: { id: number; name: string }) => (
+                    <Badge key={genre.id} variant="outline" className="text-xs">
+                      {genre.name}
+                    </Badge>
+                  ))}
               </div>
               <CollectionButton
                 movieId={movie.id}

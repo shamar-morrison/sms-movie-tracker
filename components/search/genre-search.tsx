@@ -1,5 +1,6 @@
 "use client"
 
+import { TMDBMovie } from "@/lib/tmdb"
 import type React from "react"
 import { Dispatch, SetStateAction } from "react"
 
@@ -19,7 +20,7 @@ interface GenreSearchProps {
   setSelectedGenre: Dispatch<SetStateAction<string>>
   yearRange: number[]
   setYearRange: Dispatch<SetStateAction<number[]>>
-  results: any[]
+  results: TMDBMovie[]
   isSearching: boolean
   searchPerformed: boolean
   onSearch: (genreId: string) => Promise<void>
