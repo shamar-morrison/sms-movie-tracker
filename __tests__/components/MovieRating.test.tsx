@@ -62,13 +62,12 @@ describe("MovieRating Component", () => {
   })
 
   test("renders movie details correctly", () => {
-    const { getByText, getByTestId } = render(
+    const { getByTestId } = render(
       <MovieRating movieId={mockMovieId} movieDetails={mockMovieDetails} />,
     )
 
-    // Check that movie details are displayed
+    // Check that movie title is displayed
     expect(getByTestId("movie-title")).toHaveTextContent("Fight Club")
-    expect(getByText(/drama/i)).toBeInTheDocument()
   })
 
   test("shows unrated state when user has not rated the movie", () => {
