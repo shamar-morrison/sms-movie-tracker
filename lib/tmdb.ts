@@ -1,5 +1,6 @@
-const TMDB_API_BASE_URL = "https://api.themoviedb.org/3"
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY
+const TMDB_API_BASE_URL = "/api/tmdb"
+// Remove the direct API key usage
+// const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY
 
 export interface TMDBMovie {
   id: number
@@ -69,12 +70,14 @@ async function fetchFromTMDB(
   endpoint: string,
   params: Record<string, string> = {},
 ) {
-  if (!TMDB_API_KEY) {
-    throw new Error("TMDB API key is not set")
-  }
+  // Remove the API key check since it's now handled by the proxy
+  // if (!TMDB_API_KEY) {
+  //   throw new Error("TMDB API key is not set")
+  // }
 
-  const url = new URL(`${TMDB_API_BASE_URL}${endpoint}`)
-  url.searchParams.append("api_key", TMDB_API_KEY)
+  const url = new URL(`${TMDB_API_BASE_URL}${endpoint}`, window.location.origin)
+  // Remove the direct API key usage
+  // url.searchParams.append("api_key", TMDB_API_KEY)
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.append(key, value)
   }
