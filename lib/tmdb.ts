@@ -1,6 +1,4 @@
 const TMDB_API_BASE_URL = "/api/tmdb"
-// Remove the direct API key usage
-// const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY
 
 export interface TMDBMovie {
   id: number
