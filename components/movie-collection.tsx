@@ -67,7 +67,6 @@ export default function MovieCollection({
   // Create a unique cache key to force proper query subscription
   const [cacheKey] = useState(() => Date.now().toString())
 
-  // Use the type as part of the component key to force remount when type changes
   useEffect(() => {
     // Force refresh on type change by logging it
     console.log(

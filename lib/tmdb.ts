@@ -79,8 +79,6 @@ async function fetchFromTMDB(
     url.searchParams.append(key, value)
   }
 
-  console.log(`Fetching from TMDB: ${url.toString()}`) // Log the URL (remove in prod)
-
   const response = await fetch(url.toString())
   if (!response.ok) {
     const errorBody = await response.text()
