@@ -148,7 +148,6 @@ export default function MovieCollection({
         if (type === "collection") {
           // Only check if we're authenticated and auth is ready - don't wait for userMovies
           if (isAuthenticated && authReady) {
-            // If userMovies is available, transform them
             if (userMovies) {
               // Transform Convex documents to TMDBMovie format
               result = userMovies.map(
@@ -390,7 +389,6 @@ export default function MovieCollection({
   const isDiscoverLoading =
     type === "discover" && loading && prevMovies.length === 0
 
-  // Main content display - actual data
   return (
     <div className="space-y-8">
       <AnimatePresence mode="wait">
