@@ -60,6 +60,10 @@ export default function MoviePage({ params }: { params: { id: string } }) {
       try {
         const movieData = await getMovieById(params.id)
         setMovie(movieData)
+
+        if (movieData?.title) {
+          document.title = `${movieData.title} - Movie Tracker`
+        }
       } catch (error) {
         console.error("Error loading movie:", error)
       } finally {
@@ -68,6 +72,10 @@ export default function MoviePage({ params }: { params: { id: string } }) {
     }
 
     loadMovie()
+
+    return () => {
+      document.title = "Movie Tracker"
+    }
   }, [params.id])
 
   const getYoutubeTrailer = (movie: TMDBMovie) => {
